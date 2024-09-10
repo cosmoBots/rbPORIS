@@ -267,11 +267,11 @@ def createPythonCode(nodes_dict,deviceName,output_path: str,relative_path: str):
 
     methodsstr =  "    #----------------------------------------------------------------------\n"
     methodsstr += "    #  Specific methods\n"
-    methodsstr += "    #----------------------------------------------------------------------\n\n"
-    porishstr =  "from PORIS import *\n\n"
-    porishstr += "class "+deviceName+"PORIS(PORISDoc):\n"
-    porishstr += "    def __init__(self, project_id):\n"
-    porishstr += "        super().__init__(project_id)\n"
+    methodsstr += "    #----------------------------------------------------------------------\n"
+    porishstr =  "require_relative 'PORIS'\n\n"
+    porishstr += "class "+deviceName+"PORIS < PORISDoc\n"
+    porishstr += "    def initialize(project_id)\n"
+    porishstr += "        super(project_id)\n"
     poriscstr =  ""
 
     poriscinitstr = ""
@@ -300,23 +300,27 @@ def createPythonCode(nodes_dict,deviceName,output_path: str,relative_path: str):
             '''
             if thisclass == "prParam":
                 # PORISParam prBinning;
-                porishstr += "        self.pr"+nodename+" = PORISParam(\""+nodename+"\")\n"
+                porishstr += "        @pr"+nodename+" = PORISParam.new(\""+nodename+"\")\n"
                 if not savemem:
-                    porishstr += "        self.md"+nodename+"Mode_UNKNOWN = PORISMode(\""+nodename+"Mode_UNKNOWN\")\n"
-                    porishstr += "        self.vl"+nodename+"_UNKNOWN = PORISValue(\""+nodename+"_UNKNOWN\")\n"
+                    porishstr += "        @md"+nodename+"Mode_UNKNOWN = PORISMode.new(\""+nodename+"Mode_UNKNOWN\")\n"
+                    porishstr += "        @vl"+nodename+"_UNKNOWN = PORISValue.new(\""+nodename+"_UNKNOWN\")\n"
 
                 else:
-                    porishstr += "        self.md"+nodename+"UNKNOWN = PORISMode(\"UNKNOWN\")\n"
-                    porishstr += "        self.vl"+nodename+"_UNKNOWN = PORISValue(\"UNKNOWN\")\n"
+                    porishstr += "        @md"+nodename+"UNKNOWN = PORISMode.new(\"UNKNOWN\")\n"
+                    porishstr += "        @vl"+nodename+"_UNKNOWN = PORISValue.new(\"UNKNOWN\")\n"
 
 
                 methodsstr += "\n    ## "+thisclass+" "+nodename+" \n"
                 methodsstr += "\n    # "+nodename+"\n"
-                methodsstr += "    def get_"+nodename+"(self)-> PORISValue :\n"
-                methodsstr += "        return self.pr"+nodename+".getSelectedValue()\n\n"
 
-                methodsstr += "    def set_"+nodename+"(self, value: PORISValue)-> PORISValue :\n"
-                methodsstr += "        return self.pr"+nodename+".setValue(value)\n\n"
+                methodsstr += "    def get_"+nodename+"Node\n"
+                methodsstr += "        @pr"+nodename+"\n\tend\n\n"
+
+                methodsstr += "    def get_"+nodename+"\n"
+                methodsstr += "        @pr"+nodename+".getSelectedValue\n\tend\n\n"
+
+                methodsstr += "    def set_"+nodename+"(value)\n"
+                methodsstr += "        @pr"+nodename+".setValue(value)\n\tend\n"
 
                 '''
                 prBinning.id = idcounter++;
@@ -361,59 +365,59 @@ def createPythonCode(nodes_dict,deviceName,output_path: str,relative_path: str):
                 else:
                     counter = 0
 
-                poriscinitstr += "        self.addItem(self.pr"+nodename+")\n"
+                poriscinitstr += "        self.addItem(@pr"+nodename+")\n"
                 if not savemem:
-                    poriscinitstr += "        self.pr"+nodename+".ident = \""+thisnode['ident']+"\"\n"
-                    poriscinitstr += "        self.pr"+nodename+".description = \""+desctomonit(thisnode['description'])+"\"\n"
+                    poriscinitstr += "        @pr"+nodename+".setIdent(\""+thisnode['ident']+"\")\n"
+                    poriscinitstr += "        @pr"+nodename+".setDescription(\""+desctomonit(thisnode['description'])+"\")\n"
                 
                 if parentNode is not None:
-                    poriscinitstr += "        self.sys"+parentNodeName+".addParam(self.pr"+nodename+")\n"
+                    poriscinitstr += "        @sys"+parentNodeName+".addParam(@pr"+nodename+")\n"
 
                 if not savemem:
-                    poriscinitstr += "        self.addItem(self.vl"+nodename+"_UNKNOWN)\n"
+                    poriscinitstr += "        self.addItem(@vl"+nodename+"_UNKNOWN)\n"
                     
                 
                 if not savemem:
-                    poriscinitstr += "        self.vl"+nodename+ "_UNKNOWN.ident = \"UNK_"+thisnode['ident']+"\"\n"
-                    poriscinitstr += "        self.vl"+nodename+ "_UNKNOWN.description = \"Unknown value for "+nodename+"\"\n"
+                    poriscinitstr += "        @vl"+nodename+ "_UNKNOWN.setIdent(\"UNK_"+thisnode['ident']+"\")\n"
+                    poriscinitstr += "        @vl"+nodename+ "_UNKNOWN.setDescription(\"Unknown value for "+nodename+"\")\n"
                 
-                poriscinitstr += "        self.pr"+nodename+".addValue(self.vl"+nodename+ "_UNKNOWN)\n"
+                poriscinitstr += "        @pr"+nodename+".addValue(@vl"+nodename+ "_UNKNOWN)\n"
 
                 if not savemem:
-                    poriscinitstr += "        self.addItem(self.md"+nodename+"Mode_UNKNOWN)\n"
+                    poriscinitstr += "        self.addItem(@md"+nodename+"Mode_UNKNOWN)\n"
                 else:
-                    poriscinitstr += "        self.addItem(self.md"+nodename+"UNKNOWN)\n"
+                    poriscinitstr += "        self.addItem(@md"+nodename+"UNKNOWN)\n"
 
                 if not savemem:
-                    poriscinitstr += "        self.md"+nodename+ "Mode_UNKNOWN.ident = \"UNKM_"+thisnode['ident']+"\"\n"
-                    poriscinitstr += "        self.md"+nodename+ "Mode_UNKNOWN.description = \"Unknown mode for "+nodename+"\"\n"
+                    poriscinitstr += "        @md"+nodename+ "Mode_UNKNOWN.setIdent(\"UNKM_"+thisnode['ident']+"\")\n"
+                    poriscinitstr += "        @md"+nodename+ "Mode_UNKNOWN.setDescription(\"Unknown mode for "+nodename+"\")\n"
                 
                 if not savemem:
-                    poriscinitstr += "        self.pr"+nodename+".addMode(self.md"+nodename+ "Mode_UNKNOWN)\n"
-                    poriscinitstr += "        self.md"+nodename+ "Mode_UNKNOWN.addValue(self.vl"+nodename+ "_UNKNOWN)\n"
-                    poriscinitstr += "        self.md"+parentNodeName+ "Mode_UNKNOWN.addSubMode(self.md"+nodename+ "Mode_UNKNOWN)\n"
+                    poriscinitstr += "        @pr"+nodename+".addMode(@md"+nodename+ "Mode_UNKNOWN)\n"
+                    poriscinitstr += "        @md"+nodename+ "Mode_UNKNOWN.addValue(@vl"+nodename+ "_UNKNOWN)\n"
+                    poriscinitstr += "        @md"+parentNodeName+ "Mode_UNKNOWN.addSubMode(@md"+nodename+ "Mode_UNKNOWN)\n"
 
                 else:
-                    poriscinitstr += "        self.pr"+nodename+".addMode(self.md"+nodename+ "UNKNOWN)\n"
-                    poriscinitstr += "        self.md"+nodename+ "UNKNOWN.addValue(self.vl"+nodename+ "_UNKNOWN)\n"
-                    poriscinitstr += "        self.md"+parentNodeName+ "UNKNOWN.addSubMode(self.md"+nodename+ "UNKNOWN)\n"
+                    poriscinitstr += "        @pr"+nodename+".addMode(@md"+nodename+ "UNKNOWN)\n"
+                    poriscinitstr += "        @md"+nodename+ "UNKNOWN.addValue(@vl"+nodename+ "_UNKNOWN)\n"
+                    poriscinitstr += "        @md"+parentNodeName+ "UNKNOWN.addSubMode(@md"+nodename+ "UNKNOWN)\n"
 
                 methodsstr += "\n    ## "+nodename+"Mode \n"
-                methodsstr += "    def get_"+nodename+"Mode(self)-> PORISMode:\n"
-                #return self.sysARCGenIII.getSelectedMode()
-                methodsstr += "        return self.pr"+nodename+".getSelectedMode()\n\n"
+                methodsstr += "    def get_"+nodename+"Mode\n"
+                #@sysARCGenIII.getSelectedMode
+                methodsstr += "        @pr"+nodename+".getSelectedMode\n\tend\n\n"
 
-                methodsstr += "    def set_"+nodename+"Mode(self, mode: PORISMode)-> PORISMode :\n"
-                methodsstr += "        return self.pr"+nodename+".selectMode(mode)\n\n"                    
+                methodsstr += "    def set_"+nodename+"Mode(mode)\n"
+                methodsstr += "        @pr"+nodename+".selectMode(mode)\n\tend\n\n"                    
 
             else:
                 # PORISSys prDetector;
-                porishstr += "        self.sys"+nodename+" = PORISSys(\""+nodename+"\")\n"
+                porishstr += "        @sys"+nodename+" = PORISSys.new(\""+nodename+"\")\n"
                 if not savemem:
-                    porishstr += "        self.md"+nodename+"Mode_UNKNOWN = PORISMode(\""+nodename+"Mode_UNKNOWN\")\n"
+                    porishstr += "        @md"+nodename+"Mode_UNKNOWN = PORISMode.new(\""+nodename+"Mode_UNKNOWN\")\n"
 
                 else:
-                    porishstr += "        self.md"+nodename+"UNKNOWN = PORISMode(\"UNKNOWN\")\n"
+                    porishstr += "        @md"+nodename+"UNKNOWN = PORISMode.new(\"UNKNOWN\")\n"
 
                 parentNode = None
                 parentNodeName = ""
@@ -428,7 +432,7 @@ def createPythonCode(nodes_dict,deviceName,output_path: str,relative_path: str):
                     parentNode['syscounter'] = counter + 1
                 else:
                     counter = 0
-                    porishstr += "        self.setRoot(self.sys"+nodename+")\n"
+                    porishstr += "        self.setRoot(@sys"+nodename+")\n"
                     
 
                 '''
@@ -439,36 +443,36 @@ def createPythonCode(nodes_dict,deviceName,output_path: str,relative_path: str):
                 prDetector.description = "Detector";
                 prDetector.parent = NULL;
                 '''
-                poriscinitstr += "        self.addItem(self.sys"+nodename+")\n"                
+                poriscinitstr += "        self.addItem(@sys"+nodename+")\n"                
                 if not savemem:
-                    poriscinitstr += "        self.sys"+nodename+".ident = \""+thisnode['ident']+"\"\n"
-                    poriscinitstr += "        self.sys"+nodename+".description = \""+desctomonit(thisnode['description'])+"\"\n"
+                    poriscinitstr += "        @sys"+nodename+".setIdent(\""+thisnode['ident']+"\")\n"
+                    poriscinitstr += "        @sys"+nodename+".setDescription(\""+desctomonit(thisnode['description'])+"\")\n"
                 
                 if parentNode is not None:
-                    poriscinitstr += "        self.sys"+parentNodeName+".addSubsystem(self.sys"+nodename+")\n" 
+                    poriscinitstr += "        @sys"+parentNodeName+".addSubsystem(@sys"+nodename+")\n" 
 
                 if not savemem:
-                    poriscinitstr += "        self.addItem(self.md"+nodename+"Mode_UNKNOWN)\n"
+                    poriscinitstr += "        self.addItem(@md"+nodename+"Mode_UNKNOWN)\n"
 
                 else:
-                    poriscinitstr += "        self.addItem(self.md"+nodename+"UNKNOWN)\n"
+                    poriscinitstr += "        self.addItem(@md"+nodename+"UNKNOWN)\n"
                     
 
                 if not savemem:
-                    poriscinitstr += "        self.md"+nodename+ "Mode_UNKNOWN.ident = \"UNKM_"+thisnode['ident']+ "\"\n"
-                    poriscinitstr += "        self.md"+nodename+ "Mode_UNKNOWN.description = \""+desctomonit(thisnode['description'])+"\"\n"
-                    poriscinitstr += "        self.sys"+nodename+".addMode(self.md"+nodename+ "Mode_UNKNOWN)\n"
+                    poriscinitstr += "        @md"+nodename+ "Mode_UNKNOWN.setIdent(\"UNKM_"+thisnode['ident']+ "\")\n"
+                    poriscinitstr += "        @md"+nodename+ "Mode_UNKNOWN.setDescription(\""+desctomonit(thisnode['description'])+"\")\n"
+                    poriscinitstr += "        @sys"+nodename+".addMode(@md"+nodename+ "Mode_UNKNOWN)\n"
 
                 else:
-                    poriscinitstr += "        self.sys"+nodename+".addMode(self.md"+nodename+ "UNKNOWN)\n"
+                    poriscinitstr += "        @sys"+nodename+".addMode(@md"+nodename+ "UNKNOWN)\n"
 
                 methodsstr += "\n    ## "+nodename+"Mode \n"
-                methodsstr += "    def get_"+nodename+"Mode(self)-> PORISMode:\n"
-                #return self.sysARCGenIII.getSelectedMode()
-                methodsstr += "        return self.sys"+nodename+".getSelectedMode()\n\n"
+                methodsstr += "    def get_"+nodename+"Mode\n"
+                #@sysARCGenIII.getSelectedMode
+                methodsstr += "        @sys"+nodename+".getSelectedMode\n\tend\n\n"
 
-                methodsstr += "    def set_"+nodename+"Mode(self, mode: PORISMode)-> PORISMode :\n"
-                methodsstr += "        return self.sys"+nodename+".selectMode(mode)\n\n"                
+                methodsstr += "    def set_"+nodename+"Mode(mode)\n"
+                methodsstr += "        @sys"+nodename+".selectMode(mode)\n\tend\n"                
             
 
 
@@ -512,10 +516,10 @@ def createPythonCode(nodes_dict,deviceName,output_path: str,relative_path: str):
                                     if kvnode['parentnode'] == thisnode:                                     
                                         if not savemem:
                                             poriscinitrelstr += "        # Marcamos "+nodename+"Mode_"+kvname+" como elegible para "+parentnodename+"Mode_"+childname+"\n"
-                                            poriscinitrelstr += "        self.md"+parentnodename+"Mode_"+childname+".addSubMode(self.md"+nodename+"Mode_"+kvname+")\n"
+                                            poriscinitrelstr += "        @md"+parentnodename+"Mode_"+childname+".addSubMode(@md"+nodename+"Mode_"+kvname+")\n"
                                         
                                         else:
-                                            poriscinitrelstr += "        self.md"+parentnodename+childname+".addSubMode(self.md"+nodename+kvname+")\n"
+                                            poriscinitrelstr += "        @md"+parentnodename+childname+".addSubMode(@md"+nodename+kvname+")\n"
 
                                         anyvaluepresentparentinner = True
                                         if not firstfound:
@@ -558,10 +562,10 @@ def createPythonCode(nodes_dict,deviceName,output_path: str,relative_path: str):
                                 if kvnode['virtual'] == False:
                                     if not savemem:
                                         poriscinitrelstr += "        # Marcamos "+nodename+"_"+kvname+" como elegible para "+nodename+"Mode_"+childname+"\n"
-                                        poriscinitrelstr += "        self.md"+nodename+"Mode_"+childname+".addValue(self.vl"+nodename+"_"+kvname+")\n"
+                                        poriscinitrelstr += "        @md"+nodename+"Mode_"+childname+".addValue(@vl"+nodename+"_"+kvname+")\n"
 
                                     else:
-                                        poriscinitrelstr += "        self.md"+nodename+childname+".addValue(self.vl"+nodename+"_"+kvname+")\n"
+                                        poriscinitrelstr += "        @md"+nodename+childname+".addValue(@vl"+nodename+"_"+kvname+")\n"
 
                                 anyvaluepresentinner = True
                                 if not firstdone:
@@ -578,26 +582,26 @@ def createPythonCode(nodes_dict,deviceName,output_path: str,relative_path: str):
                                     else:
                                         minimum_float = min(minimum_float,kvnode['min'])
 
-                                    methodsstrfl += "\n    ## "+thisclass+" "+parentNodeName+" \n"
+                                    methodsstrfl += "    ## "+thisclass+" "+parentNodeName+" \n"
                                     methodsstrfl += "\n    # "+nodename+"Double  \n"
-                                    methodsstrfl += "    def get_"+nodename+"Double(self)-> float :\n"
-                                    methodsstrfl += "        v = self.pr"+nodename+".getSelectedValue()\n"
-                                    methodsstrfl += "        v.__class__ = PORISValueFloat\n"
-                                    methodsstrfl += "        return v.getData()\n\n"
+                                    methodsstrfl += "    def get_"+nodename+"Double\n"
+                                    methodsstrfl += "        v = @pr"+nodename+".getSelectedValue\n"
+                                    methodsstrfl += "        v.class = PORISValueFloat\n"
+                                    methodsstrfl += "        v.getData\n\tend\n\n"
 
-                                    methodsstrfl += "    def set_"+nodename+"Double(self, data: float)-> float :\n"
-                                    methodsstrfl += "        return self.pr"+nodename+".getSelectedValue().setData(data)\n\n"
+                                    methodsstrfl += "    def set_"+nodename+"Double(data)\n"
+                                    methodsstrfl += "        @pr"+nodename+".getSelectedValue.setData(data)\n\tend\n"
 
                                 if kvclass == "prValText":
-                                    methodsstrfl += "\n    ## "+thisclass+" "+parentNodeName+" \n"
+                                    methodsstrfl += "    ## "+thisclass+" "+parentNodeName+" \n"
                                     methodsstrfl += "\n    # "+nodename+"String #\n"
-                                    methodsstrfl += "    def get_"+nodename+"String(self)-> str :\n"
-                                    methodsstrfl += "        v = self.pr"+nodename+".getSelectedValue()\n"
-                                    methodsstrfl += "        v.__class__ = PORISValueString\n"
-                                    methodsstrfl += "        return v.getData()\n\n"
+                                    methodsstrfl += "    def get_"+nodename+"String-> str :\n"
+                                    methodsstrfl += "        v = @pr"+nodename+".getSelectedValue\n"
+                                    methodsstrfl += "        v.class = PORISValueString\n"
+                                    methodsstrfl += "        v.getData\n\tend\n\n"
 
-                                    methodsstrfl += "    def set_"+nodename+"String(self, data: str)-> str :\n"
-                                    methodsstrfl += "        return self.pr"+nodename+".getSelectedValue().setData(data)\n\n"
+                                    methodsstrfl += "    def set_"+nodename+"String(data)\n"
+                                    methodsstrfl += "        @pr"+nodename+".getSelectedValue.setData(data)\n\tend\n"
 
                     else:
                         if childclass == "prValFloat" or childclass == "prValText" or childclass == "prValue":
@@ -629,10 +633,10 @@ def createPythonCode(nodes_dict,deviceName,output_path: str,relative_path: str):
             if thisclass == "prMode":
                 #PORISMode prDetectorMode_Image;
                 if not savemem:
-                    porishstr += "        self.md"+parentNodeName+ "Mode_" + nodename+" = PORISMode(\""+parentNodeName+ "Mode_" + nodename + "\")\n"
+                    porishstr += "        @md"+parentNodeName+ "Mode_" + nodename+" = PORISMode.new(\""+parentNodeName+ "Mode_" + nodename + "\")\n"
 
                 else:
-                    porishstr += "        self.md"+parentNodeName + nodename+" = PORISMode(\"" + nodename + "\")\n"
+                    porishstr += "        @md"+parentNodeName + nodename+" = PORISMode.new(\"" + nodename + "\")\n"
 
                 '''
                 prDetectorMode_UNKNOWN.id = idcounter++;
@@ -643,37 +647,37 @@ def createPythonCode(nodes_dict,deviceName,output_path: str,relative_path: str):
                 prDetectorMode_UNKNOWN.parent = &prDetector;
                 '''
                 if not savemem:
-                    poriscinitstr += "        self.addItem(self.md"+parentNodeName+ "Mode_"+nodename+")\n"
+                    poriscinitstr += "        self.addItem(@md"+parentNodeName+ "Mode_"+nodename+")\n"
 
                 else:
-                    poriscinitstr += "        self.addItem(self.md" + parentNodeName + "_" + nodename+")\n"
+                    poriscinitstr += "        self.addItem(@md" + parentNodeName + "_" + nodename+")\n"
 
                 if not savemem:
-                    poriscinitstr += "        self.md"+parentNodeName+ "Mode_" + nodename+".ident = \""+thisnode['ident']+"\"\n"
-                    poriscinitstr += "        self.md"+parentNodeName+ "Mode_" + nodename+".description = \""+desctomonit(thisnode['description'])+"\"\n"
+                    poriscinitstr += "        @md"+parentNodeName+ "Mode_" + nodename+".setIdent(\""+thisnode['ident']+"\")\n"
+                    poriscinitstr += "        @md"+parentNodeName+ "Mode_" + nodename+".setDescription(\""+desctomonit(thisnode['description'])+"\")\n"
 
                 if parentNode['tracker'] == "prParam":
                     if not savemem:
-                        poriscinitstr += "        self.pr"+parentNodeName+".addMode(self.md"+parentNodeName+ "Mode_" + nodename+")\n"
+                        poriscinitstr += "        @pr"+parentNodeName+".addMode(@md"+parentNodeName+ "Mode_" + nodename+")\n"
 
                     else:
-                        poriscinitstr += "        self.pr"+parentNodeName+".addMode(self.md"+parentNodeName+ nodename+")\n"
+                        poriscinitstr += "        @pr"+parentNodeName+".addMode(@md"+parentNodeName+ nodename+")\n"
                 else:
                     if not savemem:
-                        poriscinitstr += "        self.sys"+parentNodeName+".addMode(self.md"+parentNodeName+ "Mode_" + nodename+")\n"
+                        poriscinitstr += "        @sys"+parentNodeName+".addMode(@md"+parentNodeName+ "Mode_" + nodename+")\n"
 
                     else:
-                        poriscinitstr += "        self.sys"+parentNodeName+".addMode(self.md"+parentNodeName + nodename+")\n"
+                        poriscinitstr += "        @sys"+parentNodeName+".addMode(@md"+parentNodeName + nodename+")\n"
 
             else:
                 if thisclass == "prValue":
                     if thisnode['virtual'] == False:
                         #PORISValue prBinning_1x1;
                         if not savemem:
-                            porishstr += "        self.vl"+parentNodeName+"_" + nodename+" = PORISValue(\""+parentNodeName+"_" + nodename+"\")\n"
+                            porishstr += "        @vl"+parentNodeName+"_" + nodename+" = PORISValue.new(\""+parentNodeName+"_" + nodename+"\")\n"
 
                         else:
-                            porishstr += "        self.vl"+parentNodeName+"_" + nodename+" = PORISValue(\"" + nodename+"\")\n"
+                            porishstr += "        @vl"+parentNodeName+"_" + nodename+" = PORISValue.new(\"" + nodename+"\")\n"
 
                         '''
                         prBinning_1x1.id = idcounter++;
@@ -683,22 +687,22 @@ def createPythonCode(nodes_dict,deviceName,output_path: str,relative_path: str):
                         prBinning_1x1.description = "Sin binning";
                         prBinning_1x1.parent = &prBinning;
                         '''                
-                        poriscinitstr += "        self.addItem(self.vl" + parentNodeName+ "_"  + nodename+")\n"
+                        poriscinitstr += "        self.addItem(@vl" + parentNodeName+ "_"  + nodename+")\n"
 
                         if not savemem:
-                            poriscinitstr += "        self.vl"+parentNodeName+ "_" + nodename+".ident = \""+thisnode['ident']+"\"\n"
-                            poriscinitstr += "        self.vl"+parentNodeName+ "_" + nodename+".description = \""+desctomonit(thisnode['description'])+"\"\n"
+                            poriscinitstr += "        @vl"+parentNodeName+ "_" + nodename+".setIdent(\""+thisnode['ident']+"\")\n"
+                            poriscinitstr += "        @vl"+parentNodeName+ "_" + nodename+".setDescription(\""+desctomonit(thisnode['description'])+"\")\n"
                         
-                        poriscinitstr += "        self.pr"+parentNodeName+".addValue(self.vl"+parentNodeName+ "_" + nodename+")\n"
+                        poriscinitstr += "        @pr"+parentNodeName+".addValue(@vl"+parentNodeName+ "_" + nodename+")\n"
 
                 else:
                     if thisclass == "prValFloat":             
                         #PORISValueFloat prExpTime_Normal;
                         if not savemem:
-                            porishstr += "        self.vl"+parentNodeName+"_" + nodename+" = PORISValueFloat(\""+parentNodeName+"_" + nodename + "\","+str(thisnode['min'])+","+str(thisnode['default_data'])+","+str(thisnode['max'])+")\n"
+                            porishstr += "        @vl"+parentNodeName+"_" + nodename+" = PORISValueFloat.new(\""+parentNodeName+"_" + nodename + "\","+str(thisnode['min'])+","+str(thisnode['default_data'])+","+str(thisnode['max'])+")\n"
 
                         else:
-                            porishstr += "        self.vl"+parentNodeName+"_" + nodename+" = PORISValueFloat(\"" + nodename + "\","+str(thisnode['min'])+","+str(thisnode['default_data'])+","+str(thisnode['max'])+")\n"
+                            porishstr += "        @vl"+parentNodeName+"_" + nodename+" = PORISValueFloat.new(\"" + nodename + "\","+str(thisnode['min'])+","+str(thisnode['default_data'])+","+str(thisnode['max'])+")\n"
 
                         '''
                         prExpTime_Normal.id = idcounter++;
@@ -708,24 +712,24 @@ def createPythonCode(nodes_dict,deviceName,output_path: str,relative_path: str):
                         prExpTime_Normal.description = "Rango normal de valores para ExpTime";
                         prExpTime_Normal.parent = &prExpTime;                    
                         '''                
-                        poriscinitstr += "        self.addItem(self.vl" + parentNodeName + "_" + nodename+")\n"
+                        poriscinitstr += "        self.addItem(@vl" + parentNodeName + "_" + nodename+")\n"
 
                         if not savemem:
-                            poriscinitstr += "        self.vl"+parentNodeName+ "_" + nodename+".ident = \""+thisnode['ident']+"\"\n"
-                            poriscinitstr += "        self.vl"+parentNodeName+ "_" + nodename+".description = \""+desctomonit(thisnode['description'])+"\"\n"
+                            poriscinitstr += "        @vl"+parentNodeName+ "_" + nodename+".setIdent(\""+thisnode['ident']+"\")\n"
+                            poriscinitstr += "        @vl"+parentNodeName+ "_" + nodename+".setDescription(\""+desctomonit(thisnode['description'])+"\")\n"
                         
-                        #poriscinitstr += "        self.vl"+parentNodeName+ "_" + nodename+".min = "+str(thisnode['min'])+"\n"
-                        #poriscinitstr += "        self.vl"+parentNodeName+ "_" + nodename+".default_data = "+str(thisnode['default_data'])+"\n"
-                        #poriscinitstr += "        self.vl"+parentNodeName+ "_" + nodename+".max = "+str(thisnode['max'])+"\n"                  
-                        poriscinitstr += "        self.pr"+parentNodeName+".addValue(self.vl"+parentNodeName+ "_" + nodename+")\n"
+                        #poriscinitstr += "        @vl"+parentNodeName+ "_" + nodename+".min = "+str(thisnode['min'])+"\n"
+                        #poriscinitstr += "        @vl"+parentNodeName+ "_" + nodename+".default_data = "+str(thisnode['default_data'])+"\n"
+                        #poriscinitstr += "        @vl"+parentNodeName+ "_" + nodename+".max = "+str(thisnode['max'])+"\n"                  
+                        poriscinitstr += "        @pr"+parentNodeName+".addValue(@vl"+parentNodeName+ "_" + nodename+")\n"
 
                     else:
                         if thisclass == "prValText":
                             if not savemem:
-                                porishstr += "        self.vl"+parentNodeName+"_" + nodename+" = PORISValueString(\""+parentNodeName+"_" + nodename+"\",'"+str(thisnode['deftext'])+"')\n"
+                                porishstr += "        @vl"+parentNodeName+"_" + nodename+" = PORISValueString.new(\""+parentNodeName+"_" + nodename+"\",'"+str(thisnode['deftext'])+"')\n"
 
                             else:
-                                porishstr += "        self.vl"+parentNodeName+"_" + nodename+" = PORISValueString(\""+nodename+"\",'"+str(thisnode['deftext'])+"')\n"
+                                porishstr += "        @vl"+parentNodeName+"_" + nodename+" = PORISValueString.new(\""+nodename+"\",'"+str(thisnode['deftext'])+"')\n"
 
                             '''
                             prShiftList_Normal.id = idcounter++;
@@ -735,12 +739,12 @@ def createPythonCode(nodes_dict,deviceName,output_path: str,relative_path: str):
                             prShiftList_Normal.description = "Lista _separada por comas_ con los desplazamientos";
                             prShiftList_Normal.parent = &prShiftList;
                             '''                
-                            poriscinitstr += "        self.addItem(self.vl" + parentNodeName + "_" + nodename+")\n"
+                            poriscinitstr += "        self.addItem(@vl" + parentNodeName + "_" + nodename+")\n"
                             if not savemem:
-                                poriscinitstr += "        self.vl"+parentNodeName+ "_" + nodename+".ident = \""+thisnode['ident']+"\"\n"
-                                poriscinitstr += "        self.vl"+parentNodeName+ "_" + nodename+".description = \""+desctomonit(thisnode['description'])+"\"\n"
+                                poriscinitstr += "        @vl"+parentNodeName+ "_" + nodename+".setIdent(\""+thisnode['ident']+"\")\n"
+                                poriscinitstr += "        @vl"+parentNodeName+ "_" + nodename+".setDescription(\""+desctomonit(thisnode['description'])+"\")\n"
                             
-                            poriscinitstr += "        self.pr"+parentNodeName+".addValue(self.vl"+parentNodeName+ "_" + nodename+")\n"
+                            poriscinitstr += "        @pr"+parentNodeName+".addValue(@vl"+parentNodeName+ "_" + nodename+")\n"
 
                         else:
                             if thisclass == "prCmd":
@@ -750,21 +754,21 @@ def createPythonCode(nodes_dict,deviceName,output_path: str,relative_path: str):
                                 thisnode['node'] = parentNodeName
                                 methods_dict[thiskey] = thisnode
                                 methodsstr += '\n    ## Action trigger '+thiskey+' ##\n'
-                                methodsstr += '    def '+thisnode['method']+'(self, value: bool) -> bool:\n'
+                                methodsstr += '    def '+thisnode['method']+'(value)\n'
                                 methodsstr += '        # Override this\n'
-                                methodsstr += '        return True\n\n'
+                                methodsstr += '        true\n\tend\n'
 
                             else:                            
                                 porishstr += "        //TODO: Other xx"+parentNodeName+ "_" + nodename+"\n"
 
-    poriscinitstr += poriscinitrelstr + "\n"
+    poriscinitstr += poriscinitrelstr + "end\n\n"
     
     poriscstr += poriscinitstr 
     
     with open("./"+output_path+relative_path+"/"+deviceName+"PORIS.rb", "w+") as text_file:
         text_file.write(porishstr)
         text_file.write(poriscstr)
-        text_file.write(methodsstr)
+        text_file.write(methodsstr+"end\n")
 
 def replaceStringFile(pattern_file,dest_file,pattern_text, replacement_text):
     # Read in the file

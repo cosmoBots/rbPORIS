@@ -36,7 +36,7 @@ class PORISValueFormatter
     idnode = n_node.elements['value-formatter-id']
     idnode.each_element do |t|
       if t.text?
-        return @@instances[t.text]
+        @@instances[t.text]
       end
     end
     nil
@@ -600,7 +600,7 @@ class PORISValue < PORIS
   # Creates the object instance from an XML node
   def self.fromXML(n_node, pdoc)
     ret = super(n_node, pdoc)
-    ret.__class__ = PORISValue
+    ret.class = PORISValue
     formatter = PORISValueFormatter.fromXMLRef(n_node)
     ret.setXMLFormatter(formatter)
     ret
@@ -659,7 +659,7 @@ class PORISValueData < PORISValue
   # Creates the object instance from an XML node
   def self.fromXML(n_node, pdoc)
     ret = super(n_node, pdoc)
-    ret.__class__ = PORISValueData
+    ret.class = PORISValueData
     formatter = PORISValueFormatter.fromXMLRef(n_node)
     ret.setXMLFormatter(formatter)
     ret
@@ -713,7 +713,7 @@ class PORISValueString < PORISValueData
   # Creates the object instance from an XML node
   def self.fromXML(n_node, pdoc)
     ret = super(n_node, pdoc)
-    ret.__class__ = PORISValueString
+    ret.class = PORISValueString
 
     listnodes = n_node.elements.to_a("default-string")
     if listnodes.length > 0
@@ -774,7 +774,7 @@ class PORISValueFilePath < PORISValueString
   # Creates the object instance from an XML node
   def self.fromXML(n_node, pdoc)
     ret = super(n_node, pdoc)
-    ret.__class__ = PORISValueFilePath
+    ret.class = PORISValueFilePath
     ret.file_ext = nil
     ret.file_desc = nil
 
@@ -864,7 +864,7 @@ class PORISValueDate < PORISValueString
   # Creates the object instance from an XML node
   def self.fromXML(n_node, pdoc)
     ret = super(n_node, pdoc)
-    ret.__class__ = PORISValueDate
+    ret.class = PORISValueDate
     ret.min_date = nil
     ret.max_date = nil
 
@@ -985,7 +985,7 @@ class PORISValueFloat < PORISValueData
   # Creates the object instance from an XML node
   def self.fromXML(n_node, pdoc)
     ret = super(n_node, pdoc)
-    ret.__class__ = PORISValueFloat
+    ret.class = PORISValueFloat
 
     defaultfloatnode = n_node.elements["default-float"]
     if defaultfloatnode.nil?
@@ -1281,7 +1281,7 @@ class PORISNode < PORIS
   # violate the restriction written here, and add an alternative mode as the first one
   def addMode(m)
     @modes[m.getId] = m
-    m.setParent(self)
+    m.setParent
     if @defaultMode.nil?
       # No mode was the default one, this one will be the default one
       @defaultMode = m
@@ -1588,7 +1588,7 @@ class PORISNode < PORIS
 
   def self.fromXML(n_node, pdoc)
     ret = super(PORISNode, PORISNode).fromXML(n_node, pdoc)
-    ret.__class__ = PORISNode
+    ret.class = PORISNode
     ret.modes = {}
     ret.selectedMode = nil
     ret.defaultMode = nil
@@ -1635,7 +1635,7 @@ class PORISParam < PORISNode
 
   def addValue(v)
     @values[v.getId] = v
-    v.setParent(self)
+    v.setParent
     @selected_value = v if @selected_value.nil?
   end
 
@@ -1784,12 +1784,12 @@ class PORISSys < PORISNode
 
   def addParam(p)
     @params[p.getId] = p
-    p.setParent(self)
+    p.setParent
   end
 
   def addSubsystem(s)
     @subsystems[s.getId] = s
-    s.setParent(self)
+    s.setParent
   end
 
   def selectMode(m)
@@ -1903,7 +1903,7 @@ class PORISSys < PORISNode
 
   def self.fromXML(n_node, pdoc)
     ret = super(n_node, pdoc)
-    ret.__class__ = PORISSys
+    ret.class = PORISSys
     ret.params = {}
     ret.subsystems = {}
 
@@ -1962,7 +1962,7 @@ class PORISDoc
       n.setId(id)
     end
 
-    n.setDocument(self)
+    n.setDocument
     @item_dict[n.getId.to_s] = n
   end
 
