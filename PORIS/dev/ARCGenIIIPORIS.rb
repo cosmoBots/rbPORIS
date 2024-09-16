@@ -1,4 +1,4 @@
-require_relative 'PORIS'
+require_relative '../PORIS'
 
 class ARCGenIIIPORIS < PORISDoc
     def initialize(project_id)
