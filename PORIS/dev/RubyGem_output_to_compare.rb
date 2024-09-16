@@ -4,6 +4,111 @@
 require_relative 'PORIS'
 
 class ARCGenIIIPORIS < PORISDoc
+	attr_reader :sysARCGenIII
+	attr_reader :mdARCGenIIIMode_Real
+	attr_reader :mdARCGenIIIMode_Emulated
+	attr_reader :mdARCGenIIIMode_Engineering
+	attr_reader :sysFirmware
+	attr_reader :mdFirmwareMode_tim
+	attr_reader :mdFirmwareMode_osiris2
+	attr_reader :mdFirmwareMode_osiris3
+	attr_reader :mdFirmwareMode_osiris4
+	attr_reader :mdFirmwareMode_osiris5
+	attr_reader :mdFirmwareMode_Engineering
+	attr_reader :sysVariants
+	attr_reader :mdVariantsMode_Normal
+	attr_reader :mdVariantsMode_Extended
+	attr_reader :mdVariantsMode_Extended_2
+	attr_reader :mdVariantsMode_Engineering
+	attr_reader :sysAcquisition
+	attr_reader :mdAcquisitionMode_Normal
+	attr_reader :mdAcquisitionMode_FrameTransfer
+	attr_reader :mdAcquisitionMode_Shuffling
+	attr_reader :mdAcquisitionMode_NormalWindow
+	attr_reader :mdAcquisitionMode_Calibration
+	attr_reader :mdAcquisitionMode_Engineering
+	attr_reader :prShuffleLines
+	attr_reader :mdShuffleLinesMode_Normal
+	attr_reader :vlShuffleLines_Full_Range
+	attr_reader :prShiftNumber
+	attr_reader :mdShiftNumberMode_Normal
+	attr_reader :vlShiftNumber_Full_Range
+	attr_reader :prBinning
+	attr_reader :mdBinningMode_All
+	attr_reader :vlBinning_1x1
+	attr_reader :vlBinning_1x2
+	attr_reader :vlBinning_2x1
+	attr_reader :vlBinning_2x2
+	attr_reader :sysSubarrayFeature
+	attr_reader :mdSubarrayFeatureMode_Off
+	attr_reader :mdSubarrayFeatureMode_On
+	attr_reader :mdSubarrayFeatureMode_Engineering
+	attr_reader :prCols
+	attr_reader :mdColsMode_Normal
+	attr_reader :vlCols_Full_Range
+	attr_reader :proffsetRow
+	attr_reader :mdoffsetRowMode_Normal
+	attr_reader :vloffsetRow_Full_Range
+	attr_reader :prRows
+	attr_reader :mdRowsMode_Normal
+	attr_reader :vlRows_Full_Range
+	attr_reader :proffsetCol
+	attr_reader :mdoffsetColMode_Normal
+	attr_reader :vloffsetCol_Full_Range
+	attr_reader :sysExposureCtrl
+	attr_reader :mdExposureCtrlMode_Normal
+	attr_reader :mdExposureCtrlMode_FT
+	attr_reader :mdExposureCtrlMode_NoShutter
+	attr_reader :mdExposureCtrlMode_Calibration
+	attr_reader :mdExposureCtrlMode_Engineering
+	attr_reader :prExpTime
+	attr_reader :mdExpTimeMode_Normal
+	attr_reader :mdExpTimeMode_FT
+	attr_reader :vlExpTime_Full_Range
+	attr_reader :vlExpTime_FT_Range
+	attr_reader :prnumOfFrames
+	attr_reader :mdnumOfFramesMode_Multiple
+	attr_reader :mdnumOfFramesMode_Single
+	attr_reader :vlnumOfFrames_Multiple_Range
+	attr_reader :vlnumOfFrames_1
+	attr_reader :prCalibGain
+	attr_reader :mdCalibGainMode_Normal
+	attr_reader :vlCalibGain_Normal_Range
+	attr_reader :sysOpenShutter
+	attr_reader :mdOpenShutterMode_On
+	attr_reader :mdOpenShutterMode_Off
+	attr_reader :sysPixelSpeed
+	attr_reader :mdPixelSpeedMode_SLW
+	attr_reader :mdPixelSpeedMode_MED
+	attr_reader :mdPixelSpeedMode_FST
+	attr_reader :sysOutputSource
+	attr_reader :mdOutputSourceMode_0x0
+	attr_reader :mdOutputSourceMode_0x1
+	attr_reader :mdOutputSourceMode_0x2
+	attr_reader :mdOutputSourceMode_0x3
+	attr_reader :mdOutputSourceMode_ALL
+	attr_reader :mdOutputSourceMode_TWO
+	attr_reader :mdOutputSourceMode_Engineering
+	attr_reader :sysRecomposition
+	attr_reader :mdRecompositionMode_None
+	attr_reader :mdRecompositionMode_Parallel
+	attr_reader :mdRecompositionMode_Serial
+	attr_reader :mdRecompositionMode_QuadCCD
+	attr_reader :mdRecompositionMode_QuadIR
+	attr_reader :mdRecompositionMode_CDSQuad
+	attr_reader :mdRecompositionMode_HawaiiRG
+	attr_reader :sysDimensions
+	attr_reader :mdDimensionsMode_Normal
+	attr_reader :mdDimensionsMode_FT
+	attr_reader :mdDimensionsMode_Engineering
+	attr_reader :pruiRows
+	attr_reader :mduiRowsMode_Normal
+	attr_reader :mduiRowsMode_Half
+	attr_reader :vluiRows_Full_Range
+	attr_reader :vluiRows_FTRange
+	attr_reader :pruiCols
+	attr_reader :mduiColsMode_Normal
+	attr_reader :vluiCols_Full_Range
 	def initialize(project_id)
 		super(project_id)
 		@sysARCGenIII = PORISSys.new('ARCGenIII')
@@ -1424,18 +1529,6 @@ class ARCGenIIIPORIS < PORISDoc
 
 	def set_uiColsDouble(data)
 		@pruiCols.getSelectedValue.setData(data)
-	end
-
-	def prBinning
-		@prBinning
-	end
-
-	def mdARCGenIIIMode_Real
-		@mdARCGenIIIMode_Real
-	end
-
-	def vlBinning_2x1
-		@vlBinning_2x1
 	end
 
 end

@@ -587,8 +587,12 @@ class PORIS
     nametoidl(self.getName)
   end
 
+  def getRubyAccessor
+    "#{self.class.getRubyPrefix}#{self.getRubyName}"
+  end
+
   def getRubyIdent
-    "@#{self.class.getRubyPrefix}#{self.getRubyName}"
+    "@#{getRubyAccessor}"
   end
 
   def self.getRubyPrefix
@@ -616,6 +620,7 @@ class PORIS
 
     thisident = self.getRubyIdent
 
+    ret['attributes'] = "\tattr_reader :#{self.getRubyAccessor}\n"
     ret['constructor'] = "\t\t#{thisident} = #{getRubyConstructorString}\n"
     # ret['constructor'] = ("Entramos por aquí PORIS!!!" + self.getName + " " + self.class.name + "\n")
     ret['constructor'] += "\t\tself.addItem(#{thisident})\n"
@@ -1791,6 +1796,7 @@ class PORISNode < PORIS
 
     @modes.each do |myid, mode|
       m_ret = mode.toRuby
+      ret['attributes'] += m_ret['attributes']
       ret['constructor'] += m_ret['constructor']
       ret['destinations'] += m_ret['destinations']
       ret['destinations'] += "\t\t#{thisident}.addMode(#{mode.getRubyIdent})\n"
@@ -2091,6 +2097,7 @@ class PORISParam < PORISNode
     @values.each do |myid, value|
       # puts("---------- Processing value #{value.getName} ---------")
       m_ret = value.toRuby
+      ret['attributes'] += m_ret['attributes']
       ret['constructor'] += m_ret['constructor']
       ret['destinations'] += m_ret['destinations']
       ret['destinations'] += "\t\t#{thisident}.addValue(#{value.getRubyIdent})\n"
@@ -2308,6 +2315,7 @@ class PORISSys < PORISNode
     @params.each do |myid, param|
       # puts("---------- Processing param #{param.getName} ---------")
       m_ret = param.toRuby
+      ret['attributes'] += m_ret['attributes']
       ret['constructor'] += m_ret['constructor']
       ret['destinations'] += m_ret['destinations']
       ret['destinations'] += "\t\t#{thisident}.addParam(#{param.getRubyIdent})\n"
@@ -2321,6 +2329,7 @@ class PORISSys < PORISNode
     @subsystems.each do |myid, ss|
       # puts("---------- Processing param #{ss.getName} ---------")
       m_ret = ss.toRuby
+      ret['attributes'] += m_ret['attributes']
       ret['constructor'] += m_ret['constructor']
       ret['destinations'] += m_ret['destinations']
       ret['destinations'] += "\t\t#{thisident}.addSubsystem(#{ss.getRubyIdent})\n"
@@ -2470,16 +2479,16 @@ class PORISDoc
   end
 
   def toRuby
-    ret = {}
-    ret['constructor'] = "require_relative 'PORIS'\n\n"
-
-    ret['constructor'] += "class #{self.root.getRubyName}PORIS < PORISDoc\n"
-    ret['constructor'] += "\tdef initialize(project_id)\n"
-    ret['constructor'] += "\t\tsuper(project_id)\n"
     rootNodeCode = self.root.toRuby
-    ret['constructor'] += rootNodeCode['constructor']
-    ret['constructor'] += "\t\tself.setRoot(#{self.root.getRubyIdent})\n"
-    finalcode = ret['constructor']
+
+    finalcode = "require_relative 'PORIS'\n\n"
+
+    finalcode += "class #{self.root.getRubyName}PORIS < PORISDoc\n"
+    finalcode += rootNodeCode['attributes']
+    finalcode += "\tdef initialize(project_id)\n"
+    finalcode += "\t\tsuper(project_id)\n"
+    finalcode += rootNodeCode['constructor']
+    finalcode += "\t\tself.setRoot(#{self.root.getRubyIdent})\n"
     finalcode += rootNodeCode['destinations']
     finalcode += "\tend\n"
     finalcode += rootNodeCode['functions']
