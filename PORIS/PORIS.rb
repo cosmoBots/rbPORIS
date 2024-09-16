@@ -1,9 +1,8 @@
-require 'rexml/document'
-require 'date'
-require 'tzinfo'
+require "rexml/document"
+require "date"
+require "tzinfo"
 
 debug = false
-
 
 def nametoidl(n)
   ret = n.gsub("(", "_")
@@ -53,13 +52,13 @@ class PORISValueFormatter
   end
 
   def toXMLRef(dom)
-    n_node = REXML::Element.new('value-formatter-id')
-    n_node.add_attribute('type', 'integer')
+    n_node = REXML::Element.new("value-formatter-id")
+    n_node.add_attribute("type", "integer")
     if @id
       value_text = REXML::Text.new(@id.to_s)
       n_node.add_text(value_text)
     else
-      n_node.add_attribute('nil', 'true')
+      n_node.add_attribute("nil", "true")
     end
     n_node
   end
@@ -182,6 +181,7 @@ PORISVALUEFORMATTER_ARCSEC = PORISValueArcSecFormatter.new("arcmin", 9, "arcsec"
 # contains the common attributes and functions
 # subclasses overload them when convenient
 class PORIS
+  attr_accessor :virtual
   # Constructor, needs a name for the PORIS item
   def initialize(name)
     # puts "Creating PORIS instance name #{name}"
@@ -190,6 +190,7 @@ class PORIS
     @ident = nil            # A text id for reference
     @description = nil      # A description of the item
     @document = nil
+    @virtual = false
     # Private attributes
     @name = name           # name
     @parent = nil         # Parent node (if any)
@@ -323,7 +324,7 @@ class PORIS
 
   # Builds a reference for the item, to be used mainly inside the "destination" tag
   def toXMLRef(dom)
-    ret = REXML::Element.new('id')
+    ret = REXML::Element.new("id")
     ret.add_attribute("type", "integer")
     value_text = REXML::Text.new(@id.to_s)
     ret.push(value_text)
@@ -349,39 +350,39 @@ class PORIS
     n_node = REXML::Element.new(getXMLNodeName)
 
     # subnode with the name of the item
-    name_child = REXML::Element.new('name')
+    name_child = REXML::Element.new("name")
     value_text = REXML::Text.new(getName)
     name_child.push(value_text)
     n_node.push(name_child)
 
     # subnode with an identifying integer
-    id_child = REXML::Element.new('id')
+    id_child = REXML::Element.new("id")
     id_child.add_attribute("type", "integer")
     value_text = REXML::Text.new(@id.to_s)
     id_child.push(value_text)
     n_node.push(id_child)
 
     # subnode with the type
-    nodetype_child = REXML::Element.new('type')
+    nodetype_child = REXML::Element.new("type")
     value_text = REXML::Text.new(getXMLType)
     nodetype_child.push(value_text)
     n_node.push(nodetype_child)
 
     # subnode with the node type id
-    nodetype_child = REXML::Element.new('node-type-id')
+    nodetype_child = REXML::Element.new("node-type-id")
     nodetype_child.add_attribute("type", "integer")
     value_text = REXML::Text.new(getXMLNodeType.to_s)
     nodetype_child.push(value_text)
     n_node.push(nodetype_child)
 
     # subnode with an identifying string
-    ident_child = REXML::Element.new('ident')
+    ident_child = REXML::Element.new("ident")
     value_text = REXML::Text.new(@ident)
     ident_child.push(value_text)
     n_node.push(ident_child)
 
     # subnode with the project id
-    nodetype_child = REXML::Element.new('project-id')
+    nodetype_child = REXML::Element.new("project-id")
     nodetype_child.add_attribute("type", "integer")
     value_text = REXML::Text.new(getProjectId.to_s)
     nodetype_child.push(value_text)
@@ -389,7 +390,7 @@ class PORIS
 
     # array of labels
     lbs = getLabels
-    labels_child = REXML::Element.new('labels')
+    labels_child = REXML::Element.new("labels")
     labels_child.add_attribute("type", "array")
     lbs.each do |l, caption|
       # Each label is an entry in the labels dict
@@ -414,11 +415,11 @@ class PORIS
     n_node.push(labels_child)
 
     # array of destinations, containing their XML references
-    destinations_node = REXML::Element.new('destinations')
+    destinations_node = REXML::Element.new("destinations")
     destinations_node.add_attribute("type", "array")
     dests = getDestinations
     dests.each do |d|
-      dest_node = REXML::Element.new('destination')
+      dest_node = REXML::Element.new("destination")
       dest_node.add_attribute("type", d.getXMLType)
       dest_node.push(d.toXMLRef(dom))
       destinations_node.push(dest_node)
@@ -428,7 +429,7 @@ class PORIS
 
     # array of node attributes
     nats = getNodeAttributes
-    node_attributes_child = REXML::Element.new('node-attributes')
+    node_attributes_child = REXML::Element.new("node-attributes")
     node_attributes_child.add_attribute("type", "array")
     nats.each do |l, attr|
       # Each label is an entry in the labels dict
@@ -602,7 +603,8 @@ class PORIS
   end
 
   def getRubyIdent
-    "@#{getRubyAccessor}"
+    # "#{getRubyAccessor}"
+    "i#{self.getId}_#{self.class.getRubyPrefix}#{self.getRubyName}"
   end
 
   def self.getRubyPrefix
@@ -620,31 +622,34 @@ class PORIS
   def toRuby
     ret = {}
 
-    thisident = self.getRubyIdent
+    if not self.virtual
+      thisident = self.getRubyIdent
 
-    ret['attributes'] = "\tattr_reader :#{self.getRubyAccessor}\n"
-    ret['constructor'] = "\t\t#{thisident} = #{getRubyConstructorString}\n"
-    # ret['constructor'] = ("Entramos por aquí PORIS!!!" + self.getName + " " + self.class.name + "\n")
-    ret['constructor'] += "\t\tself.addItem(#{thisident})\n"
-    ret['constructor'] += "\t\t#{thisident}.setIdent('#{self.getIdent}')\n"
-    ret['constructor'] += "\t\t#{thisident}.setDescription('#{self.getDescription}')\n"
+      ret["attributes"] = "\tattr_reader :#{self.getRubyAccessor}\n"
 
+      ret["constructor"] = "\t\t#{thisident} = #{getRubyConstructorString}\n"
+      # ret['constructor'] = ("Entramos por aquí PORIS!!!" + self.getName + " " + self.class.name + "\n")
+      ret["constructor"] += "\t\tself.addItem(#{thisident})\n"
+      ret["constructor"] += "\t\t#{thisident}.setIdent('#{self.getIdent}')\n"
+      ret["constructor"] += "\t\t#{thisident}.setDescription('#{self.getDescription}')\n"
 
+      ret["destinations"] = ""
 
-    ret['destinations'] = ""
-
-    ret['functions'] = "\t## #{self.class.getRubyPrefix}#{self.class.getRubyFuncParticle} #{self.getRubyName}\n\n"
-    ret['functions'] += "\tdef get_#{self.getRubyName}Node\n"
-    ret['functions'] += "\t\t#{thisident}\n"
-    ret['functions'] += "\tend\n"
-
+      ret["functions"] = "\t## #{self.class.getRubyPrefix}#{self.class.getRubyFuncParticle} #{self.getRubyName}\n\n"
+      ret["functions"] += "\tdef get_#{self.getRubyName}Node\n"
+      ret["functions"] += "\t\t#{thisident}\n"
+      ret["functions"] += "\tend\n"
+    else
+      ret["attributes"] = ""
+      ret["constructor"] = ""
+      ret["destinations"] = ""
+      ret["functions"] = ""
+    end
     return ret
   end
 end
 
-
-
-require 'rexml/document'
+require "rexml/document"
 
 class PORISValue < PORIS
   def initialize(name)
@@ -701,8 +706,6 @@ class PORISValue < PORIS
   def self.getRubyFuncParticle
     "Value"
   end
-
-
 end
 
 ########################################################
@@ -1384,17 +1387,22 @@ class PORISMode < PORIS
     # puts ("Entramos por aquí PARAM!!!")
     ret = super
 
-    thisident = self.getRubyIdent
+    if not self.virtual then
+      thisident = self.getRubyIdent
 
-    @values.each do |myid, value|
-      # puts("---------- Processing value #{value.getName} ---------")
-      ret["destinations"] += "\t\t#{thisident}.addValue(#{value.getRubyIdent})\n"
+      @values.each do |myid, value|
+        if not value.virtual then
+          # puts("---------- Processing value #{value.getName} ---------")
+          ret["destinations"] += "\t\t#{thisident}.addValue(#{value.getRubyIdent})\n"
+        end
+      end
+      @submodes.each do |myid, mode|
+        if not mode.virtual then
+          # puts("---------- Processing value #{value.getName} ---------")
+          ret["destinations"] += "\t\t#{thisident}.addSubMode(#{mode.getRubyIdent})\n"
+        end
+      end
     end
-    @submodes.each do |myid, mode|
-      # puts("---------- Processing value #{value.getName} ---------")
-      ret["destinations"] += "\t\t#{thisident}.addSubMode(#{mode.getRubyIdent})\n"
-    end
-
     return ret
   end
 end
@@ -1414,8 +1422,10 @@ class PORISNode < PORIS
     @unknownMode = nil
     @engineeringMode = nil
     @unknownMode = PORISMode.new("UNKNOWN")
+    @unknownMode.virtual = true
     addMode(@unknownMode)
     @engineeringMode = PORISMode.new("Engineering")
+    @engineeringMode.virtual = true
     self.addMode(@engineeringMode)
   end
 
@@ -1440,412 +1450,408 @@ class PORISNode < PORIS
     return ret
   end
 
-
-# This function adds a mode to the current item
-# If there is no mode selected, the first one is
-# then considered as selected
-# Note: In our initialization we always add the UNKNOWN mode, without submodes, in the first position
-# this is the mechanism to disable a PORISNode (and all its subtree) when none of its submodes is eligible
-# NOTE: We should consider creating and adding the UNKNOWN mode in the constructor of the item, to don't let the user
-# violate the restriction written here, and add an alternative mode as the first one
-def addMode(m)
-  if (@unknownMode == m) then
-    index = -1
-    m.setId(index)
-  else
-    if (@engineeringMode == m) then
-      index = -3
+  # This function adds a mode to the current item
+  # If there is no mode selected, the first one is
+  # then considered as selected
+  # Note: In our initialization we always add the UNKNOWN mode, without submodes, in the first position
+  # this is the mechanism to disable a PORISNode (and all its subtree) when none of its submodes is eligible
+  # NOTE: We should consider creating and adding the UNKNOWN mode in the constructor of the item, to don't let the user
+  # violate the restriction written here, and add an alternative mode as the first one
+  def addMode(m)
+    if (@unknownMode == m) then
+      index = -1
       m.setId(index)
     else
-      index = m.getId
-      @modes[index] = m
-    end
-  end
-  @modes[m.getId] = m
-  m.setParent(self)
-  if @defaultMode.nil?
-    # No mode was the default one, this one will be the default one
-    @defaultMode = m
-  end
-
-  if @selectedMode.nil?
-    # No mode was selected, this one will be the selected one
-    @selectedMode = m
-  end
-end
-
-def getModes
-  @modes
-end
-
-# Getter for the default mode
-def getDefaultMode
-  @defaultMode
-end
-
-# Setter for the default mode
-def setDefaultMode(m)
-  # puts "Setting #{m.getName} as the default mode for #{getName}"
-  if @modes.key?(m.getId)
-    @defaultMode = m
-  else
-    puts "Error, #{m.getName} is not one of #{getName} modes"
-  end
-  @defaultMode
-end
-
-# Getter for the selected mode
-def getSelectedMode
-  @selectedMode
-end
-
-# Setter for the selected mode, names as the act of select it
-def selectMode(m)
-  # First we will get an eligible mode given our candidate
-  ret = getEligibleMode(m)
-  if ret.nil?
-    if false
-      puts "New eligible mode is NULL, so we have to set initialize the item to select the unknown mode"
-    end
-    ret = init
-  end
-
-  # If the mode has changed from the previous one, we shall propagate the change
-  if ret != getSelectedMode
-    if false
-      puts "New mode is #{ret.getName}"
-      if getSelectedMode
-        puts " which is different from #{getSelectedMode.getName}"
+      if (@engineeringMode == m) then
+        index = -3
+        m.setId(index)
       else
-        puts " which is different from NULL"
+        index = m.getId
+        @modes[index] = m
       end
     end
-    @selectedMode = ret
-  end
-  ret
-end
+    @modes[m.getId] = m
+    m.setParent(self)
+    if @defaultMode.nil?
+      # No mode was the default one, this one will be the default one
+      @defaultMode = m
+    end
 
-# Setter for the selected mode using an index in the modes list, instead of using the mode itself
-def setModeFromIdx(idx)
-  success = false
-  # First we find the mode using the index
-  mk = @modes.keys[idx]
-  if mk
-    result = selectMode(@modes[mk])
-    if result
-      # We succeeded in setting the mode using the index
-      ret = result.get_idx
-      success = true
+    if @selectedMode.nil?
+      # No mode was selected, this one will be the selected one
+      @selectedMode = m
     end
   end
 
-  if !success
-    # We could not set the mode using the idx
-    # so we will initialize the item to select the UNKNOWN mode
-    result = init
-    # index for UNKNOWN is 0
-    ret = 0
-  end
-  ret
-end
-
-# In case an item has not a selected mode, we can use this function to
-# select the first node
-# This function is normally only called internally, in reaction to
-# the circumstances of not having a selected mode when it is expected to have
-def init
-  if false
-    puts "----> Init #{getName}, mode list len: #{@modes.length}"
+  def getModes
+    @modes
   end
 
-  # We select the first mode of the list, and set it as the selected one
-  @selectedMode = self.unknownMode
-  if false
-    puts "Init #{getName}: #{@selectedMode.getName}"
-  end
-  @selectedMode
-end
-
-# This function gets the selected mode of a PORISNode.  In case there is no selected mode
-# it forces the selection of the first one (UNKNOWN)
-def getNotNullSelectedMode
-  if false
-    puts "Entering in PORISNode getNotNullSelectedMode #{getName}"
+  # Getter for the default mode
+  def getDefaultMode
+    @defaultMode
   end
 
-  ret = getSelectedMode
-  if ret.nil?
-    # There is no selected mode?  Then we will force the item initialization
-    # This normally is not occurring, because from the first mode added, the item
-    # has a selected one
-    if false
-      puts "- selectedMode is NULL"
-    end
-
-    # If there is no selected mode, we will initialize the item, which will select
-    # the first mode as the active one (the first mode should be the UNKNOWN one)
-    ret = init
-  end
-
-  if false
-    puts "- selectedMode is now #{getSelectedMode.getName}"
-  end
-  # This looks like redundant, but it is not!!!
-  selectMode(getSelectedMode)
-end
-
-# Gets the most suitable mode from the list of eligible ones for this item.
-# The argument is a candidate mode
-# if the candidate submode is eligible, then it will be returned
-# otherwise if the current submode is eligible, then it will be returned
-# if none of them both were returned, then the first eligible submode will be returned
-# This method plays an important role when changes are made at higher levels
-# of the PORIS tree, helping the subtree to arrive to a consistent state
-# propagating the change to eligible submodes in case the triggering changes
-# make the tree inconsistent.
-# Important: candidate(m) and current submodes shall belong to the same parent item (param or sys)
-# Take into account that submodes list is mixing modes of several items.
-# Finally, if there is no eligible submode belonging to the same parent that the m mode, the UNKNOWN mode
-# mode of m's parent.  UNKNOWN modes disables the parent item, and this is the method which
-# allows disabling parts of a PORIS subtree depending on the choices made at higher levels
-# TODO: Implement a check to confirm m and current are siblings
-def getEligibleMode(m)
-  if false
-    puts "Entering in PORISNode #{getName}.getEligibleMode(#{m.getName})"
-  end
-
-  ret = nil
-  if @modes.key?(m.getId)
-    # m is a mode of the current item
-    if getParent.nil?
-      # Current item has no parent, no restrictions to set m
-      if false
-        puts "Parent of #{getName} is null, no upper levels for restrictions, we can freely select m"
-      end
-      ret = m
+  # Setter for the default mode
+  def setDefaultMode(m)
+    # puts "Setting #{m.getName} as the default mode for #{getName}"
+    if @modes.key?(m.getId)
+      @defaultMode = m
     else
-      # As this mode has a parent, we need to select a mode which is eligible in the context of the active mode at higher level
-      # presenting the candidate as the candidate one, and the current mode as the alternative candidate
-      if false
-        puts "Searching within the #{getParent.getSelectedMode.submodes.length} submodes of #{getParent.getName}"
-        puts "selectedMode #{getSelectedMode.getName} #{m.getName}"
-      end
-      ret = getParent.getSelectedMode.getEligibleSubMode(m, getSelectedMode)
+      puts "Error, #{m.getName} is not one of #{getName} modes"
     end
+    @defaultMode
+  end
 
+  # Getter for the selected mode
+  def getSelectedMode
+    @selectedMode
+  end
+
+  # Setter for the selected mode, names as the act of select it
+  def selectMode(m)
+    # First we will get an eligible mode given our candidate
+    ret = getEligibleMode(m)
     if ret.nil?
       if false
-        puts "ERROR, we were not lucky, there was no way of selecting a mode (NULL after search)"
+        puts "New eligible mode is NULL, so we have to set initialize the item to select the unknown mode"
       end
-    else
+      ret = init
+    end
+
+    # If the mode has changed from the previous one, we shall propagate the change
+    if ret != getSelectedMode
       if false
-        puts "Selected mode is #{ret.getName}"
+        puts "New mode is #{ret.getName}"
+        if getSelectedMode
+          puts " which is different from #{getSelectedMode.getName}"
+        else
+          puts " which is different from NULL"
+        end
+      end
+      @selectedMode = ret
+    end
+    ret
+  end
+
+  # Setter for the selected mode using an index in the modes list, instead of using the mode itself
+  def setModeFromIdx(idx)
+    success = false
+    # First we find the mode using the index
+    mk = @modes.keys[idx]
+    if mk
+      result = selectMode(@modes[mk])
+      if result
+        # We succeeded in setting the mode using the index
+        ret = result.get_idx
+        success = true
       end
     end
-  else
-    puts "ERROR, trying to select #{m.getName} which is not a mode of #{getName}"
-    # We then try to find a suitable mode depending on the choices done at higher level
-    # we can not present m as a candidate, so we are presenting the current selected mode as candidate too
-    if getParent.nil?
-      # No parent, we can select the default mode
-      ret = @defaultMode
+
+    if !success
+      # We could not set the mode using the idx
+      # so we will initialize the item to select the UNKNOWN mode
+      result = init
+      # index for UNKNOWN is 0
+      ret = 0
+    end
+    ret
+  end
+
+  # In case an item has not a selected mode, we can use this function to
+  # select the first node
+  # This function is normally only called internally, in reaction to
+  # the circumstances of not having a selected mode when it is expected to have
+  def init
+    if false
+      puts "----> Init #{getName}, mode list len: #{@modes.length}"
+    end
+
+    # We select the first mode of the list, and set it as the selected one
+    @selectedMode = self.unknownMode
+    if false
+      puts "Init #{getName}: #{@selectedMode.getName}"
+    end
+    @selectedMode
+  end
+
+  # This function gets the selected mode of a PORISNode.  In case there is no selected mode
+  # it forces the selection of the first one (UNKNOWN)
+  def getNotNullSelectedMode
+    if false
+      puts "Entering in PORISNode getNotNullSelectedMode #{getName}"
+    end
+
+    ret = getSelectedMode
+    if ret.nil?
+      # There is no selected mode?  Then we will force the item initialization
+      # This normally is not occurring, because from the first mode added, the item
+      # has a selected one
+      if false
+        puts "- selectedMode is NULL"
+      end
+
+      # If there is no selected mode, we will initialize the item, which will select
+      # the first mode as the active one (the first mode should be the UNKNOWN one)
+      ret = init
+    end
+
+    if false
+      puts "- selectedMode is now #{getSelectedMode.getName}"
+    end
+    # This looks like redundant, but it is not!!!
+    selectMode(getSelectedMode)
+  end
+
+  # Gets the most suitable mode from the list of eligible ones for this item.
+  # The argument is a candidate mode
+  # if the candidate submode is eligible, then it will be returned
+  # otherwise if the current submode is eligible, then it will be returned
+  # if none of them both were returned, then the first eligible submode will be returned
+  # This method plays an important role when changes are made at higher levels
+  # of the PORIS tree, helping the subtree to arrive to a consistent state
+  # propagating the change to eligible submodes in case the triggering changes
+  # make the tree inconsistent.
+  # Important: candidate(m) and current submodes shall belong to the same parent item (param or sys)
+  # Take into account that submodes list is mixing modes of several items.
+  # Finally, if there is no eligible submode belonging to the same parent that the m mode, the UNKNOWN mode
+  # mode of m's parent.  UNKNOWN modes disables the parent item, and this is the method which
+  # allows disabling parts of a PORIS subtree depending on the choices made at higher levels
+  # TODO: Implement a check to confirm m and current are siblings
+  def getEligibleMode(m)
+    if false
+      puts "Entering in PORISNode #{getName}.getEligibleMode(#{m.getName})"
+    end
+
+    ret = nil
+    if @modes.key?(m.getId)
+      # m is a mode of the current item
+      if getParent.nil?
+        # Current item has no parent, no restrictions to set m
+        if false
+          puts "Parent of #{getName} is null, no upper levels for restrictions, we can freely select m"
+        end
+        ret = m
+      else
+        # As this mode has a parent, we need to select a mode which is eligible in the context of the active mode at higher level
+        # presenting the candidate as the candidate one, and the current mode as the alternative candidate
+        if false
+          puts "Searching within the #{getParent.getSelectedMode.submodes.length} submodes of #{getParent.getName}"
+          puts "selectedMode #{getSelectedMode.getName} #{m.getName}"
+        end
+        ret = getParent.getSelectedMode.getEligibleSubMode(m, getSelectedMode)
+      end
+
+      if ret.nil?
+        if false
+          puts "ERROR, we were not lucky, there was no way of selecting a mode (NULL after search)"
+        end
+      else
+        if false
+          puts "Selected mode is #{ret.getName}"
+        end
+      end
     else
-      ret = getParent.getSelectedMode.getEligibleSubMode(getSelectedMode, @defaultMode)
-    end
-  end
-  ret
-end
-
-# Function to get an eligible mode using an index
-def getEligibleModeFromIdx(idx)
-  ret = 0
-  mk = @modes.keys[idx]
-  if mk
-    result = getEligibleMode(@submodes[mk])
-    if result
-      ret = result.get_idx
-      success = true
-    end
-  end
-  ret
-end
-
-# Get a mode from its Idx
-def getModeFromId(myid)
-  ret = nil
-  if @modes.key?(myid)
-    ret = @modes[myid]
-  end
-  ret
-end
-
-# Get a mode from its name
-def getModeFromName(myname)
-  ret = nil
-  @modes.each do |myid, mode|
-    if mode.getName == myname
-      ret = mode
-    end
-  end
-  ret
-end
-
-# Getter for the destinations list, including the modes
-def getDestinations
-  ret = []
-  @modes.each do |k, mode|
-    ret << mode
-  end
-  ret
-end
-
-########### XML related functions ########
-
-# Function to obtain the tag name for the current item
-# In XML all PORISNodes (no matter if they are systems or params)
-# are <sub-system>
-def getXMLNodeName
-  "sub-system"
-end
-
-# Function to obtain the NodeType, overloading super's
-def getXMLNodeType
-  4
-end
-
-# Dump XML from this item.  Appends default mode
-# to super's XML
-# TODO: At the moment we have not selected default modes
-def toXML(dom)
-
-  # <default-mode-id type="integer" nil="true"/>
-  n_node = super(dom)
-  defaultmodenode = REXML::Element.new("default-mode-id")
-  defaultmodenode.add_attribute("type", "integer")
-  # WARNING: It looks like the java panel is not correctly using default mode
-
-  m = getDefaultMode
-  if m.nil?
-    defaultmodenode.add_attribute("nil", "true")
-  else
-    defaultmodetext = REXML::Text.new(m.getId.to_s)
-    if defaultmodetext
-      defaultmodenode.push(defaultmodetext)
-    else
-      puts "Error creating a text node for the default value of the #{getName} mode"
-      raise "Assertion failed"
-    end
-  end
-  n_node.push(defaultmodenode)
-  n_node
-end
-
-# Creates the object instance from an XML node
-def self.executeXMLParser(n_node, pdoc)
-  typenode = n_node.getElementsByTagName("type")[0]
-  t = typenode.firstChild.nodeValue
-  if t == "PORISParam"
-    return PORISParam.fromXML(n_node, pdoc)
-  elsif t == "PORISSys"
-    return PORISSys.fromXML(n_node, pdoc)
-  end
-
-  # Let's see the destinations to know if it is a PORISSys or a PORISParam
-  namenode = n_node.getElementsByTagName("name")[0]
-  name = namenode.firstChild.nodeValue
-  # puts "****** Parsing #{t} #{name}"
-
-  destnode = n_node.getElementsByTagName("destinations")[0]
-  destnode.children.each do |d|
-    if d.nodeType != d.TEXT_NODE
-      # puts "Name #{d.xpath}"
-      if d.getAttribute("type") == "PORISNode" || d.getAttribute("type") == "PORISSys" || d.getAttribute("type") == "PORISParam"
-        # puts "Is a system"
-        return PORISSys.fromXML(n_node, pdoc)
+      puts "ERROR, trying to select #{m.getName} which is not a mode of #{getName}"
+      # We then try to find a suitable mode depending on the choices done at higher level
+      # we can not present m as a candidate, so we are presenting the current selected mode as candidate too
+      if getParent.nil?
+        # No parent, we can select the default mode
+        ret = @defaultMode
+      else
+        ret = getParent.getSelectedMode.getEligibleSubMode(getSelectedMode, @defaultMode)
       end
     end
+    ret
   end
-  # puts "Is a param"
-  PORISParam.fromXML(n_node, pdoc)
-end
 
-def self.fromXML(n_node, pdoc)
-  ret = super(PORISNode, PORISNode).fromXML(n_node, pdoc)
-  if ret != nil then
-    ret.class = PORISNode
-    ret.modes = {}
-    ret.selectedMode = nil
-    ret.defaultMode = nil
+  # Function to get an eligible mode using an index
+  def getEligibleModeFromIdx(idx)
+    ret = 0
+    mk = @modes.keys[idx]
+    if mk
+      result = getEligibleMode(@submodes[mk])
+      if result
+        ret = result.get_idx
+        success = true
+      end
+    end
+    ret
+  end
+
+  # Get a mode from its Idx
+  def getModeFromId(myid)
+    ret = nil
+    if @modes.key?(myid)
+      ret = @modes[myid]
+    end
+    ret
+  end
+
+  # Get a mode from its name
+  def getModeFromName(myname)
+    ret = nil
+    @modes.each do |myid, mode|
+      if mode.getName == myname
+        ret = mode
+      end
+    end
+    ret
+  end
+
+  # Getter for the destinations list, including the modes
+  def getDestinations
+    ret = []
+    @modes.each do |k, mode|
+      ret << mode
+    end
+    ret
+  end
+
+  ########### XML related functions ########
+
+  # Function to obtain the tag name for the current item
+  # In XML all PORISNodes (no matter if they are systems or params)
+  # are <sub-system>
+  def getXMLNodeName
+    "sub-system"
+  end
+
+  # Function to obtain the NodeType, overloading super's
+  def getXMLNodeType
+    4
+  end
+
+  # Dump XML from this item.  Appends default mode
+  # to super's XML
+  # TODO: At the moment we have not selected default modes
+  def toXML(dom)
+
+    # <default-mode-id type="integer" nil="true"/>
+    n_node = super(dom)
+    defaultmodenode = REXML::Element.new("default-mode-id")
+    defaultmodenode.add_attribute("type", "integer")
+    # WARNING: It looks like the java panel is not correctly using default mode
+
+    m = getDefaultMode
+    if m.nil?
+      defaultmodenode.add_attribute("nil", "true")
+    else
+      defaultmodetext = REXML::Text.new(m.getId.to_s)
+      if defaultmodetext
+        defaultmodenode.push(defaultmodetext)
+      else
+        puts "Error creating a text node for the default value of the #{getName} mode"
+        raise "Assertion failed"
+      end
+    end
+    n_node.push(defaultmodenode)
+    n_node
+  end
+
+  # Creates the object instance from an XML node
+  def self.executeXMLParser(n_node, pdoc)
+    typenode = n_node.getElementsByTagName("type")[0]
+    t = typenode.firstChild.nodeValue
+    if t == "PORISParam"
+      return PORISParam.fromXML(n_node, pdoc)
+    elsif t == "PORISSys"
+      return PORISSys.fromXML(n_node, pdoc)
+    end
+
+    # Let's see the destinations to know if it is a PORISSys or a PORISParam
+    namenode = n_node.getElementsByTagName("name")[0]
+    name = namenode.firstChild.nodeValue
+    # puts "****** Parsing #{t} #{name}"
 
     destnode = n_node.getElementsByTagName("destinations")[0]
-    # puts "destnode: #{destnode.xpath}"
-    dest = nil
-    # puts ret.getName
     destnode.children.each do |d|
       if d.nodeType != d.TEXT_NODE
-        dest = PORIS.fromXMLRef(d, pdoc)
-        # puts "d: #{dest.getName}"
-        if dest
-          if dest.is_a?(PORISMode)
-            # Let's see the destinations to know if it is a PORISSys or a PORISParam
-            ret.addMode(dest)
-            # puts ret.modes
+        # puts "Name #{d.xpath}"
+        if d.getAttribute("type") == "PORISNode" || d.getAttribute("type") == "PORISSys" || d.getAttribute("type") == "PORISParam"
+          # puts "Is a system"
+          return PORISSys.fromXML(n_node, pdoc)
+        end
+      end
+    end
+    # puts "Is a param"
+    PORISParam.fromXML(n_node, pdoc)
+  end
+
+  def self.fromXML(n_node, pdoc)
+    ret = super(PORISNode, PORISNode).fromXML(n_node, pdoc)
+    if ret != nil then
+      ret.class = PORISNode
+      ret.modes = {}
+      ret.selectedMode = nil
+      ret.defaultMode = nil
+
+      destnode = n_node.getElementsByTagName("destinations")[0]
+      # puts "destnode: #{destnode.xpath}"
+      dest = nil
+      # puts ret.getName
+      destnode.children.each do |d|
+        if d.nodeType != d.TEXT_NODE
+          dest = PORIS.fromXMLRef(d, pdoc)
+          # puts "d: #{dest.getName}"
+          if dest
+            if dest.is_a?(PORISMode)
+              # Let's see the destinations to know if it is a PORISSys or a PORISParam
+              ret.addMode(dest)
+              # puts ret.modes
+            end
           end
         end
       end
     end
-  end
-  ret
-end
-
-def getRubyModeNamePrefix
-  "#{self.getRubyName}Mode_"
-end
-
-def getRubyModeIdentPrefix
-  "@#{PORISMode.getRubyPrefix}#{self.getRubyModeNamePrefix}"
-end
-
-def toRuby
-  # puts ("Entramos por aquí PORISNode!!!")
-  ret = super
-
-  thisident = self.getRubyIdent
-  thisModeIdentPrefix = self.getRubyModeIdentPrefix
-  thisUnknownModeIdent = thisModeIdentPrefix + "UNKNOWN"
-  thisUnknownModeName = self.getRubyModeNamePrefix + "UNKNOWN"
-
-
-  ret["constructor"] += "\t\t#{thisUnknownModeIdent} = PORISMode.new('#{thisUnknownModeName}')\n"
-
-  ret["constructor"] += "\t\tself.addItem(#{thisUnknownModeIdent})\n"
-  ret["constructor"] += "\t\t#{thisUnknownModeIdent}.setIdent('UNKM_#{self.getIdent}')\n"
-  ret["constructor"] += "\t\t#{thisUnknownModeIdent}.setDescription('Unknown mode for #{self.getRubyName}')\n"
-  ret["destinations"] += "\t\t#{thisident}.addMode(#{thisUnknownModeIdent})\n"
-
-
-  @modes.each do |myid, mode|
-    m_ret = mode.toRuby
-    ret["attributes"] += m_ret["attributes"]
-    ret["constructor"] += m_ret["constructor"]
-    ret["destinations"] += m_ret["destinations"]
-    ret["destinations"] += "\t\t#{thisident}.addMode(#{mode.getRubyIdent})\n"
+    ret
   end
 
-  ret["functions"] += "\tdef get_#{self.getRubyName}Mode\n"
-  ret["functions"] += "\t\t#{thisident}.getSelectedMode\n"
-  ret["functions"] += "\tend\n\n"
-
-  ret["functions"] += "\tdef set_#{self.getRubyName}Mode(mode)\n"
-  ret["functions"] += "\t\t#{thisident}.selectMode(mode)\n"
-  ret["functions"] += "\tend\n\n"
-
-  return ret
+  def getRubyModeNamePrefix
+    "#{self.getRubyName}Mode_"
   end
 
+  def getRubyModeIdentPrefix
+    "i#{self.getId}_#{PORISMode.getRubyPrefix}#{self.getRubyModeNamePrefix}"
+  end
 
+  def toRuby
+    # puts ("Entramos por aquí PORISNode!!!")
+    ret = super
+    if not self.virtual then
+      thisident = self.getRubyIdent
+      thisModeIdentPrefix = self.getRubyModeIdentPrefix
+      # thisUnknownModeIdent = thisModeIdentPrefix + "UNKNOWN"
+      # thisUnknownModeName = self.getRubyModeNamePrefix + "UNKNOWN"
 
+      # ret["constructor"] += "\t\t#{thisUnknownModeIdent} = PORISMode.new('#{thisUnknownModeName}')\n"
 
+      # ret["constructor"] += "\t\tself.addItem(#{thisUnknownModeIdent})\n"
+      # ret["constructor"] += "\t\t#{thisUnknownModeIdent}.setIdent('UNKM_#{self.getIdent}')\n"
+      # ret["constructor"] += "\t\t#{thisUnknownModeIdent}.setDescription('Unknown mode for #{self.getRubyName}')\n"
+      # ret["destinations"] += "\t\t#{thisident}.addMode(#{thisUnknownModeIdent})\n"
+
+      @modes.each do |myid, mode|
+        if not mode.virtual then
+          m_ret = mode.toRuby
+          ret["attributes"] += m_ret["attributes"]
+          ret["constructor"] += m_ret["constructor"]
+          ret["destinations"] += m_ret["destinations"]
+          ret["destinations"] += "\t\t#{thisident}.addMode(#{mode.getRubyIdent})\n"
+        end
+      end
+
+      ret["functions"] += "\tdef get_#{self.getRubyName}Mode\n"
+      ret["functions"] += "\t\t#{thisident}.getSelectedMode\n"
+      ret["functions"] += "\tend\n\n"
+
+      ret["functions"] += "\tdef set_#{self.getRubyName}Mode(mode)\n"
+      ret["functions"] += "\t\t#{thisident}.selectMode(mode)\n"
+      ret["functions"] += "\tend\n\n"
+    end
+
+    return ret
+  end
 end
 
 ##########################################
@@ -1864,6 +1870,7 @@ class PORISParam < PORISNode
     @values = {}
     @unknownValue = nil
     @unknownValue = PORISValue.new("UNKNOWN")
+    @unknownValue.virtual = true
     self.addValue(self.unknownValue)
     @unknownMode.addValue(self.unknownValue)
   end
@@ -1954,8 +1961,8 @@ class PORISParam < PORISNode
     ret = getEligibleValue(v, @selected_value)
     if ret != @selected_value then
       if @selected_value.is_a?(PORISValueData)
-        data = @selected_value.get_data
-        ret.set_data(data)
+        data = @selected_value.getData
+        @selected_value.setData(data)
       end
 
       @selected_value = ret
@@ -2035,7 +2042,6 @@ class PORISParam < PORISNode
     ret
   end
 
-
   def self.getRubyPrefix
     "pr"
   end
@@ -2049,88 +2055,81 @@ class PORISParam < PORISNode
   end
 
   def getRubyValueIdentPrefix
-    "@#{PORISValue.getRubyPrefix}#{self.getRubyValueNamePrefix}"
+    "i#{self.getId}_#{PORISValue.getRubyPrefix}#{self.getRubyValueNamePrefix}"
   end
-
 
   def toRuby
     # puts ("Entramos por aquí PARAM!!! " + self.getRubyIdent)
     ret = super
-    thisident = self.getRubyIdent
-    thisModeIdentPrefix = self.getRubyModeIdentPrefix
-    thisUnknownModeIdent = thisModeIdentPrefix+"UNKNOWN"
-    thisUnknownValueIdent = getRubyValueIdentPrefix+"UNKNOWN"
-    thisUnknownValueName = self.getRubyValueNamePrefix+"UNKNOWN"
-
-
-=begin
-    @vlShuffleLines_UNKNOWN = PORISValue.new("ShuffleLines_UNKNOWN")
-=end
-
-    ret['constructor'] += "\t\t#{thisUnknownValueIdent} = PORISValue.new('#{thisUnknownValueName}')\n"
+    if not self.virtual then
+      thisident = self.getRubyIdent
+      thisModeIdentPrefix = self.getRubyModeIdentPrefix
+      # thisUnknownModeIdent = thisModeIdentPrefix + "UNKNOWN"
+      # thisUnknownValueIdent = getRubyValueIdentPrefix + "UNKNOWN"
+      # thisUnknownValueName = self.getRubyValueNamePrefix + "UNKNOWN"
 
 =begin
-    self.addItem(@vlShuffleLines_UNKNOWN)
-    @vlShuffleLines_UNKNOWN.setIdent("UNK_ARC-0080")
-    @vlShuffleLines_UNKNOWN.setDescription("Unknown value for ShuffleLines")
-    @prShuffleLines.addValue(@vlShuffleLines_UNKNOWN)
+      @vlShuffleLines_UNKNOWN = PORISValue.new("ShuffleLines_UNKNOWN")
 =end
-    ret['constructor'] += "\t\tself.addItem(#{thisUnknownValueIdent})\n"
-    ret['constructor'] += "\t\t#{thisUnknownValueIdent}.setIdent('UNK_#{self.getIdent}')\n"
-    ret['constructor'] += "\t\t#{thisUnknownValueIdent}.setDescription('Unknown value for #{self.getRubyName}')\n"
-    ret['destinations'] += "\t\t#{thisident}.addValue(#{thisUnknownValueIdent})\n"
+
+      # ret["constructor"] += "\t\t#{thisUnknownValueIdent} = PORISValue.new('#{thisUnknownValueName}')\n"
 
 =begin
-    @mdShuffleLinesMode_UNKNOWN.addValue(@vlShuffleLines_UNKNOWN)
+      self.addItem(@vlShuffleLines_UNKNOWN)
+      @vlShuffleLines_UNKNOWN.setIdent("UNK_ARC-0080")
+      @vlShuffleLines_UNKNOWN.setDescription("Unknown value for ShuffleLines")
+      @prShuffleLines.addValue(@vlShuffleLines_UNKNOWN)
 =end
-    ret['destinations'] += "\t\t#{thisUnknownModeIdent}.addValue(#{thisUnknownValueIdent})\n"
+      # ret["constructor"] += "\t\tself.addItem(#{thisUnknownValueIdent})\n"
+      # ret["constructor"] += "\t\t#{thisUnknownValueIdent}.setIdent('UNK_#{self.getIdent}')\n"
+      # ret["constructor"] += "\t\t#{thisUnknownValueIdent}.setDescription('Unknown value for #{self.getRubyName}')\n"
+      # ret["destinations"] += "\t\t#{thisident}.addValue(#{thisUnknownValueIdent})\n"
 
-    any_double = false
-    @values.each do |myid, value|
-      # puts("---------- Processing value #{value.getName} ---------")
-      m_ret = value.toRuby
-      ret["attributes"] += m_ret["attributes"]
-      ret["constructor"] += m_ret["constructor"]
-      ret["destinations"] += m_ret["destinations"]
-      ret["destinations"] += "\t\t#{thisident}.addValue(#{value.getRubyIdent})\n"
-      if value.class == PORISValueFloat then
-        any_double = true
+=begin
+      @mdShuffleLinesMode_UNKNOWN.addValue(@vlShuffleLines_UNKNOWN)
+=end
+      # ret["destinations"] += "\t\t#{thisUnknownModeIdent}.addValue(#{thisUnknownValueIdent})\n"
+
+      any_double = false
+      @values.each do |myid, value|
+        if not value.virtual then
+          # puts("---------- Processing value #{value.getName} ---------")
+          m_ret = value.toRuby
+          ret["attributes"] += m_ret["attributes"]
+          ret["constructor"] += m_ret["constructor"]
+          ret["destinations"] += m_ret["destinations"]
+          ret["destinations"] += "\t\t#{thisident}.addValue(#{value.getRubyIdent})\n"
+          if value.class == PORISValueFloat then
+            any_double = true
+          end
+        end
+      end
+
+      ret["functions"] += "\tdef get_#{self.getRubyName}\n"
+      ret["functions"] += "\t\t#{thisident}.getSelectedValue\n"
+      ret["functions"] += "\tend\n\n"
+
+      ret["functions"] += "\tdef set_#{self.getRubyName}(value)\n"
+      ret["functions"] += "\t\t#{thisident}.setValue(value)\n"
+      ret["functions"] += "\tend\n\n"
+
+      if any_double then
+        ret["functions"] += "\tdef get_#{self.getRubyName}Double\n"
+        ret["functions"] += "\t\tv = #{self.getRubyIdent}.getSelectedValue\n"
+        ret["functions"] += "\t\tv.class = PORISValueFloat\n"
+        ret["functions"] += "\t\tv.getData\n"
+        ret["functions"] += "\tend\n\n"
+
+        ret["functions"] += "\tdef set_#{self.getRubyName}Double(data)\n"
+        ret["functions"] += "\t\t#{self.getRubyIdent}.getSelectedValue.setData(data)\n"
+        ret["functions"] += "\tend\n\n"
       end
     end
-
-    ret['functions'] += "\tdef get_#{self.getRubyName}\n"
-    ret['functions'] += "\t\t#{thisident}.getSelectedValue\n"
-    ret['functions'] += "\tend\n\n"
-
-    ret['functions'] += "\tdef set_#{self.getRubyName}(value)\n"
-    ret['functions'] += "\t\t#{thisident}.setValue(value)\n"
-    ret['functions'] += "\tend\n\n"
-
-    if any_double then
-      ret['functions'] += "\tdef get_#{self.getRubyName}Double\n"
-      ret['functions'] += "\t\tv = #{self.getRubyIdent}.getSelectedValue\n"
-      ret['functions'] += "\t\tv.class = PORISValueFloat\n"
-      ret['functions'] += "\t\tv.getData\n"
-      ret['functions'] += "\tend\n\n"
-
-      ret['functions'] += "\tdef set_#{self.getRubyName}Double(data)\n"
-      ret['functions'] += "\t\t#{self.getRubyIdent}.getSelectedValue.setData(data)\n"
-      ret['functions'] += "\tend\n\n"
-    end
-
     return ret
   end
-
-
-
-
-
-
-
-
-
 end
-require 'rexml/document'
+
+require "rexml/document"
 
 class PORISSys < PORISNode
   attr_accessor :params, :subsystems
@@ -2294,48 +2293,41 @@ class PORISSys < PORISNode
     "Subsystem"
   end
 
-
   def toRuby
     # puts ("Entramos por aquí SYS!!!!")
     ret = super
+    if not self.virtual then
+      thisident = self.getRubyIdent
+      thisModeIdentPrefix = self.getRubyModeIdentPrefix
 
-    thisident = self.getRubyIdent
-    thisModeIdentPrefix = self.getRubyModeIdentPrefix
+      thisident = self.getRubyIdent
+      # thisUnknownModeIdent = thisModeIdentPrefix + "UNKNOWN"
 
-    thisident = self.getRubyIdent
-    thisUnknownModeIdent = thisModeIdentPrefix+"UNKNOWN"
+      @params.each do |myid, param|
+        # puts("---------- Processing param #{param.getName} ---------")
+        m_ret = param.toRuby
+        ret["attributes"] += m_ret["attributes"]
+        ret["constructor"] += m_ret["constructor"]
+        ret["destinations"] += m_ret["destinations"]
+        ret["destinations"] += "\t\t#{thisident}.addParam(#{param.getRubyIdent})\n"
+        paramModeIdentPrefix = param.getRubyModeIdentPrefix
+        # paramUnknownModeIdent = paramModeIdentPrefix + "UNKNOWN"
+        # ret["destinations"] += "\t\t#{thisUnknownModeIdent}.addSubMode(#{paramUnknownModeIdent})\n"
+        ret["functions"] += m_ret["functions"]
+      end
 
-    @params.each do |myid, param|
-      # puts("---------- Processing param #{param.getName} ---------")
-      m_ret = param.toRuby
-      ret['attributes'] += m_ret['attributes']
-      ret['constructor'] += m_ret['constructor']
-      ret['destinations'] += m_ret['destinations']
-      ret['destinations'] += "\t\t#{thisident}.addParam(#{param.getRubyIdent})\n"
-      paramModeIdentPrefix = param.getRubyModeIdentPrefix
-      paramUnknownModeIdent = paramModeIdentPrefix+"UNKNOWN"
-      ret['destinations'] += "\t\t#{thisUnknownModeIdent}.addSubMode(#{paramUnknownModeIdent})\n"
-      ret['functions'] += m_ret['functions']
+      @subsystems.each do |myid, ss|
+        # puts("---------- Processing param #{ss.getName} ---------")
+        m_ret = ss.toRuby
+        ret["attributes"] += m_ret["attributes"]
+        ret["constructor"] += m_ret["constructor"]
+        ret["destinations"] += m_ret["destinations"]
+        ret["destinations"] += "\t\t#{thisident}.addSubsystem(#{ss.getRubyIdent})\n"
+        ret["functions"] += m_ret["functions"]
+      end
     end
-
-
-    @subsystems.each do |myid, ss|
-      # puts("---------- Processing param #{ss.getName} ---------")
-      m_ret = ss.toRuby
-      ret['attributes'] += m_ret['attributes']
-      ret['constructor'] += m_ret['constructor']
-      ret['destinations'] += m_ret['destinations']
-      ret['destinations'] += "\t\t#{thisident}.addSubsystem(#{ss.getRubyIdent})\n"
-      ret['functions'] += m_ret['functions']
-    end
-
     return ret
   end
-
-
-
-
-
 end
 
 class PORISDoc
@@ -2419,7 +2411,7 @@ class PORISDoc
 
   def toXML
     xmlDocument = REXML::Document.new
-    xmlInstr = xmlDocument.add_element('poris', 'id' => 'systems')
+    xmlInstr = xmlDocument.add_element("poris", "id" => "systems")
 
     consistent_list = getConsistentReferencesSortedIdsList
     consistent_list.each do |id|
@@ -2475,20 +2467,20 @@ class PORISDoc
     finalcode = "require_relative 'PORIS'\n\n"
 
     finalcode += "class #{self.root.getRubyName}PORIS < PORISDoc\n"
-    finalcode += rootNodeCode['attributes']
+    # We remove the accessors to avoid nomenclature issues
+    # finalcode += rootNodeCode['attributes']
     finalcode += "\tdef initialize(project_id)\n"
     finalcode += "\t\tsuper(project_id)\n"
-    finalcode += rootNodeCode['constructor']
+    finalcode += rootNodeCode["constructor"]
     finalcode += "\t\tself.setRoot(#{self.root.getRubyIdent})\n"
-    finalcode += rootNodeCode['destinations']
+    finalcode += rootNodeCode["destinations"]
     finalcode += "\tend\n"
-    finalcode += rootNodeCode['functions']
+    # We remove the functions to avoid nomenclature issues
+    # finalcode += rootNodeCode['functions']
     finalcode += "end\n\n"
 
     finalcode += "thismodel = #{self.root.getRubyName}PORIS.new(#{self.getProjectId})\n"
 
-
     return finalcode
-
   end
 end
