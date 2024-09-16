@@ -217,7 +217,7 @@ class PORIS
   # id setter
   def setId(id)
     @id = id
-    return 1
+    return [self]
   end
 
   # ident getter
@@ -377,6 +377,10 @@ class PORIS
 
     # subnode with an identifying string
     ident_child = REXML::Element.new("ident")
+    if (@ident == nil)
+      # Engineering modes, unknown modes, and unknown values have no ident
+      @ident = "VIRT-"+self.getId.to_s
+    end
     value_text = REXML::Text.new(@ident)
     ident_child.push(value_text)
     n_node.push(ident_child)
@@ -634,6 +638,7 @@ class PORIS
       ret["constructor"] += "\t\t#{thisident}.setDescription('#{self.getDescription}')\n"
 
       ret["destinations"] = ""
+      ret["foreigndests"] = ""
 
       ret["functions"] = "\t## #{self.class.getRubyPrefix}#{self.class.getRubyFuncParticle} #{self.getRubyName}\n\n"
       ret["functions"] += "\tdef get_#{self.getRubyName}Node\n"
@@ -643,6 +648,7 @@ class PORIS
       ret["attributes"] = ""
       ret["constructor"] = ""
       ret["destinations"] = ""
+      ret["foreigndests"] = ""
       ret["functions"] = ""
     end
     return ret
@@ -1143,7 +1149,6 @@ end
 
 # As we need to use the class from the class itself, we will need to declare it in advance
 class PORISMode < PORIS
-
   # Constructor, uses super's an adds the initialization of the eligible values and submodes
   def initialize(name)
     super(name)
@@ -1155,12 +1160,23 @@ class PORISMode < PORIS
   # Function to add a submode as eligible if current mode is active
   def addSubMode(m)
     @submodes[m.getId] = m
-    p = self.getParent
-    if p != nil then
-      if self != p.engineeringMode then
-        p.engineeringMode.addSubMode(m)
+  end
+
+  # Submodes getter
+  def getSubModes
+    ret = {}
+    if self.getParent != nil then
+      if self != self.getParent.engineeringMode then
+        ret = @submodes
+      else
+        self.getParent.getDestinations.each{|d|
+          if d.is_a?(PORISNode) then
+            ret = d.getModes.merge(ret)
+          end
+        }
       end
     end
+    return ret
   end
 
   # Function to add a value as eligible if current mode is active
@@ -1228,32 +1244,32 @@ class PORISMode < PORIS
       else
         puts "Entering in PORISMode getEligibleSubMode with mode #{getName} with NULL candidate"
       end
-      puts "Eligible submodes: #{@submodes.keys}"
+      puts "Eligible submodes: #{self.getSubModes.keys}"
     end
 
     ret = nil
-    if @submodes.key?(m.getId)
+    if self.getSubModes.key?(m.getId)
       # The candidate was found in the eligible ones
       ret = m
     else
       # The candidate was not found in the eligible ones
-      if @submodes.key?(current.getId)
+      if self.getSubModes.key?(current.getId)
         # The current value was found in the eligible ones
         ret = current
       else
         # We will try to find the default mode for the PORISNode holding the candidate mode
         defmode = m.getParent.getDefaultMode
-        if @submodes.key?(defmode.getId)
+        if self.getSubModes.key?(defmode.getId)
           ret = defmode
         else
           if false
-            puts "None of the two given or the default one, I have only these keys #{@submodes.keys}"
+            puts "None of the two given or the default one, I have only these keys #{self.getSubModes.keys}"
           end
 
           # Neither the candidate nor the current submodes were eligible
           # Search the first submode with the same parent than the candidate
           # Iterating all submodes
-          @submodes.each_value do |s|
+          self.getSubModes.each_value do |s|
             if false
               puts "#{s.getParent} #{s.getParent.getName}"
             end
@@ -1290,8 +1306,8 @@ class PORISMode < PORIS
   # This function executes getEligibleSubMode() using an index to select the candidate
   # It also returns an index
   def get_eligible_sub_mode_from_idx(idx, current)
-    mk = @submodes.keys[idx]
-    result = get_eligible_sub_mode(@submodes[mk], current)
+    mk = self.getSubModes.keys[idx]
+    result = get_eligible_sub_mode(self.getSubModes[mk], current)
     result.nil? ? 0 : result.get_idx
   end
 
@@ -1299,7 +1315,7 @@ class PORISMode < PORIS
   def getDestinations
     ret = []
     @values.each_value { |v| ret << v }
-    @submodes.each_value { |m| ret << m }
+    self.getSubModes.each_value { |m| ret << m }
     ret
   end
 
@@ -1396,10 +1412,10 @@ class PORISMode < PORIS
           ret["destinations"] += "\t\t#{thisident}.addValue(#{value.getRubyIdent})\n"
         end
       end
-      @submodes.each do |myid, mode|
+      self.getSubModes.each do |myid, mode|
         if not mode.virtual then
           # puts("---------- Processing value #{value.getName} ---------")
-          ret["destinations"] += "\t\t#{thisident}.addSubMode(#{mode.getRubyIdent})\n"
+          ret["foreigndests"] += "\t\t#{thisident}.addSubMode(#{mode.getRubyIdent})\n"
         end
       end
     end
@@ -1424,7 +1440,7 @@ class PORISNode < PORIS
     @unknownMode = PORISMode.new("UNKNOWN")
     @unknownMode.virtual = true
     addMode(@unknownMode)
-    @engineeringMode = PORISMode.new("Engineering")
+    @engineeringMode = PORISMode.new("UNRESTRICTED")
     @engineeringMode.virtual = true
     self.addMode(@engineeringMode)
   end
@@ -1434,20 +1450,26 @@ class PORISNode < PORIS
     ret = super(i)
 
     prevIdx = self.unknownMode.getId
-    ret += self.unknownMode.setId(i + ret)
+    ret += self.unknownMode.setId(i + ret.length)
     if prevIdx != nil then
       @modes.delete(prevIdx)
       @modes[self.unknownMode.getId] = self.unknownMode
     end
 
     prevIdx = self.engineeringMode.getId
-    ret += self.engineeringMode.setId(i + ret)
+    ret += self.engineeringMode.setId(i + ret.length)
     if prevIdx != nil then
       @modes.delete(prevIdx)
       @modes[self.engineeringMode.getId] = self.engineeringMode
     end
 
     return ret
+  end
+
+  def setIdent(ident)
+    super(ident)
+    self.engineeringMode.setIdent("UNRS-"+ident)
+    self.unknownMode.setIdent("UNKM-"+ident)
   end
 
   # This function adds a mode to the current item
@@ -1471,6 +1493,7 @@ class PORISNode < PORIS
       end
     end
     @modes[m.getId] = m
+    puts("Setting "+m.getName+" as children of "+self.getName)
     m.setParent(self)
     if @defaultMode.nil?
       # No mode was the default one, this one will be the default one
@@ -1670,7 +1693,7 @@ class PORISNode < PORIS
     ret = 0
     mk = @modes.keys[idx]
     if mk
-      result = getEligibleMode(@submodes[mk])
+      result = getEligibleMode(self.getSubModes[mk])
       if result
         ret = result.get_idx
         success = true
@@ -1838,6 +1861,7 @@ class PORISNode < PORIS
           ret["constructor"] += m_ret["constructor"]
           ret["destinations"] += m_ret["destinations"]
           ret["destinations"] += "\t\t#{thisident}.addMode(#{mode.getRubyIdent})\n"
+          ret["foreigndests"] += m_ret["foreigndests"]
         end
       end
 
@@ -1875,11 +1899,17 @@ class PORISParam < PORISNode
     @unknownMode.addValue(self.unknownValue)
   end
 
+  def setIdent(ident)
+    super(ident)
+    self.unknownValue.setIdent("UNKV-"+ident)
+    self.unknownMode.setIdent("UNKM-"+ident)
+  end
+
   # ID setter
   def setId(i)
     ret = super(i)
     prevIdx = self.unknownValue.getId
-    ret += self.unknownValue.setId(i + ret)
+    ret += self.unknownValue.setId(i + ret.length)
     if prevIdx != nil then
       self.values.delete(prevIdx)
       self.values[self.unknownValue.getId] = self.unknownValue
@@ -2099,6 +2129,7 @@ class PORISParam < PORISNode
           ret["constructor"] += m_ret["constructor"]
           ret["destinations"] += m_ret["destinations"]
           ret["destinations"] += "\t\t#{thisident}.addValue(#{value.getRubyIdent})\n"
+          ret["foreigndests"] += m_ret["foreigndests"]
           if value.class == PORISValueFloat then
             any_double = true
           end
@@ -2310,9 +2341,10 @@ class PORISSys < PORISNode
         ret["constructor"] += m_ret["constructor"]
         ret["destinations"] += m_ret["destinations"]
         ret["destinations"] += "\t\t#{thisident}.addParam(#{param.getRubyIdent})\n"
+        ret["foreigndests"] += m_ret["foreigndests"]
         paramModeIdentPrefix = param.getRubyModeIdentPrefix
         # paramUnknownModeIdent = paramModeIdentPrefix + "UNKNOWN"
-        # ret["destinations"] += "\t\t#{thisUnknownModeIdent}.addSubMode(#{paramUnknownModeIdent})\n"
+        # ret["foreigndess"] += "\t\t#{thisUnknownModeIdent}.addSubMode(#{paramUnknownModeIdent})\n"
         ret["functions"] += m_ret["functions"]
       end
 
@@ -2323,6 +2355,7 @@ class PORISSys < PORISNode
         ret["constructor"] += m_ret["constructor"]
         ret["destinations"] += m_ret["destinations"]
         ret["destinations"] += "\t\t#{thisident}.addSubsystem(#{ss.getRubyIdent})\n"
+        ret["foreigndests"] += m_ret["foreigndests"]
         ret["functions"] += m_ret["functions"]
       end
     end
@@ -2364,11 +2397,14 @@ class PORISDoc
 
     # puts(n.getName)
     new_id = @id_counter
-    incr = n.setId(@id_counter)
-    @id_counter += incr
+    items_created = n.setId(@id_counter)
+    @id_counter += items_created.length
 
     n.setDocument(self)
-    @item_dict[n.getId.to_s] = n
+    items_created.each{ |i|
+      @item_dict[i.getId.to_s] = i
+    }
+
   end
 
   def getItem(i)
@@ -2385,26 +2421,66 @@ class PORISDoc
   def getConsistentReferencesSortedIdsList
     node_and_destinations = {}
     @item_dict.each_value do |n|
-      node_and_destinations[n.getId.to_s] = n.getDestinations.map(&:getId).map(&:to_s)
+        dests = n.getDestinations
+        # print(n.getId.to_s + " " + n.getName + " " + dests.length.to_s+" [")
+        node_and_destinations[n.getId.to_s] = []
+        dests.each {|d|
+          # print(d.getId.to_s + ":" +d.class.name+"|"+ d.getName+" ")
+          node_and_destinations[n.getId.to_s] << d.getId.to_s
+        }
+        # print("]\n")
+        # puts(n.getId.to_s+"|"+n.class.name+"|"+n.getName+":"+node_and_destinations[n.getId.to_s].to_s)
+      # node_and_destinations[n.getId.to_s] = n.getDestinations.map(&:getId).map(&:to_s)
     end
 
     finished = false
     ordered_list = []
 
-    while !finished
-      nodes_without_destinations = node_and_destinations.select { |_, destinations| destinations.empty? }.keys.map(&:to_i)
-      ordered_list.concat(nodes_without_destinations)
+    count = 0
 
+    # puts ("---------------- LOOP STARTS HERE ----------------")
+
+    while !finished
+      # puts ("---------------- LOOP STARTS HERE ---"+count.to_s+"-------------")
+      nodes_without_destinations = []
+      node_and_destinations.keys.each {|k|
+        if (node_and_destinations[k].length <= 0) then
+          nodes_without_destinations << k
+        end
+      }
+      # puts("len without destination: "+nodes_without_destinations.length.to_s)
+      # puts(nodes_without_destinations.to_s)
+      ordered_list.concat(nodes_without_destinations)
+      #puts(ordered_list.to_s)
+      #puts("lbefore:" + node_and_destinations.length.to_s)
       nodes_without_destinations.each do |id|
+        # print("r"+id.to_s)
         node_and_destinations.delete(id.to_s)
       end
+      # puts("lafter:" + node_and_destinations.length.to_s)
+      # puts(node_and_destinations.keys.to_s)
 
-      node_and_destinations.each_value do |destinations|
-        destinations.reject! { |d| nodes_without_destinations.include?(d.to_i) }
-      end
+      node_and_destinations.keys.each {|k|
 
-      finished = node_and_destinations.empty?
+        nodes_without_destinations.each{|n|
+
+          if node_and_destinations[k].include?(n) then
+            node_and_destinations[k].delete(n)
+          end
+
+        }
+      }
+
+      # puts("checking "+ node_and_destinations.length.to_s)
+      finished = (node_and_destinations.length <= 0)
+      count += 1
     end
+
+
+    node_and_destinations.keys.each {|nk|
+      n = @item_dict[nk]
+      # puts(n.getId.to_s+"|"+n.getName+":"+node_and_destinations[nk].to_s)
+    }
 
     ordered_list
   end
@@ -2416,6 +2492,7 @@ class PORISDoc
     consistent_list = getConsistentReferencesSortedIdsList
     consistent_list.each do |id|
       n = @item_dict[id.to_s]
+      # puts("--> " + n.getName)
       n_node = n.toXML(xmlDocument)
       xmlInstr.push(n_node) if n_node
     end
@@ -2474,6 +2551,7 @@ class PORISDoc
     finalcode += rootNodeCode["constructor"]
     finalcode += "\t\tself.setRoot(#{self.root.getRubyIdent})\n"
     finalcode += rootNodeCode["destinations"]
+    finalcode += rootNodeCode["foreigndests"]
     finalcode += "\tend\n"
     # We remove the functions to avoid nomenclature issues
     # finalcode += rootNodeCode['functions']
