@@ -17,6 +17,17 @@ module PORISValueFormatterXMLPatch
   end
 
   module ClassMethods
+
+    def fromXMLRef(n_node)
+      idnode = n_node.elements["value-formatter-id"]
+      idnode.each_element do |t|
+        if t.text?
+          @@instances[t.text]
+        end
+      end
+      nil
+    end
+
   end
 
   module InstanceMethods
@@ -31,16 +42,6 @@ module PORISValueFormatterXMLPatch
         n_node.add_attribute("nil", "true")
       end
       n_node
-    end
-
-    def self.fromXMLRef(n_node)
-      idnode = n_node.elements["value-formatter-id"]
-      idnode.each_element do |t|
-        if t.text?
-          @@instances[t.text]
-        end
-      end
-      nil
     end
 
   end
@@ -60,40 +61,9 @@ module PORISXMLPatch
   end
 
   module ClassMethods
-  end
-
-  module InstanceMethods
-
-
-    # Getter for the node name (tag name) which depends of the class.
-    # It will be overloaded by subclasses
-    def getXMLNodeName
-      "none"
-    end
-
-    # Getter for the nodetype which depends of the class.
-    # It will be overloaded by subclasses
-    def getXMLNodeType
-      0
-    end
-
-    # Getter for the type which depends of the class, by default is the class name
-    # It can overloaded by subclasses.
-    def getXMLType
-      self.class.name
-    end
-
-    # Builds a reference for the item, to be used mainly inside the "destination" tag
-    def toXMLRef(dom)
-      ret = REXML::Element.new("id")
-      ret.add_attribute("type", "integer")
-      value_text = REXML::Text.new(@id.to_s)
-      ret.push(value_text)
-      ret
-    end
 
     # Recovers the id of the item from a reference
-    def self.fromXMLRef(n_node, pdoc)
+    def fromXMLRef(n_node, pdoc)
       # puts "destination_node: #{n_node.xpath}"
       idnode = n_node.getElementsByTagName("id")[0]
       if idnode.firstChild.nodeType == idnode.TEXT_NODE
@@ -102,135 +72,9 @@ module PORISXMLPatch
       nil
     end
 
-    # Dumps the current item to an XML node
-    # PORIS items, after calling this function using super().toXML(doc),
-    # will add additional nodes which will depend on the class
-    def toXML(dom)
-      # Tag name will be normally the class name, but it can be overloaded
-      # so we use a function to get it
-      n_node = REXML::Element.new(getXMLNodeName)
-
-      # subnode with the name of the item
-      name_child = REXML::Element.new("name")
-      value_text = REXML::Text.new(getName)
-      name_child.push(value_text)
-      n_node.push(name_child)
-
-      # subnode with an identifying integer
-      id_child = REXML::Element.new("id")
-      id_child.add_attribute("type", "integer")
-      value_text = REXML::Text.new(@id.to_s)
-      id_child.push(value_text)
-      n_node.push(id_child)
-
-      # subnode with the type
-      nodetype_child = REXML::Element.new("type")
-      value_text = REXML::Text.new(getXMLType)
-      nodetype_child.push(value_text)
-      n_node.push(nodetype_child)
-
-      # subnode with the node type id
-      nodetype_child = REXML::Element.new("node-type-id")
-      nodetype_child.add_attribute("type", "integer")
-      value_text = REXML::Text.new(getXMLNodeType.to_s)
-      nodetype_child.push(value_text)
-      n_node.push(nodetype_child)
-
-      # subnode with an identifying string
-      ident_child = REXML::Element.new("ident")
-      if (@ident == nil)
-        # Engineering modes, unknown modes, and unknown values have no ident
-        @ident = "VIRT-"+self.getId.to_s
-      end
-      value_text = REXML::Text.new(@ident)
-      ident_child.push(value_text)
-      n_node.push(ident_child)
-
-      # subnode with the project id
-      nodetype_child = REXML::Element.new("project-id")
-      nodetype_child.add_attribute("type", "integer")
-      value_text = REXML::Text.new(getProjectId.to_s)
-      nodetype_child.push(value_text)
-      n_node.push(nodetype_child)
-
-      # array of labels
-      lbs = getLabels
-      labels_child = REXML::Element.new("labels")
-      labels_child.add_attribute("type", "array")
-      lbs.each do |l, caption|
-        # Each label is an entry in the labels dict
-        # The value is the caption, which shall
-        # be published under the "name" tag
-        l_node = REXML::Element.new("label")
-        name_node = REXML::Element.new("name")
-        value_text = REXML::Text.new(caption)
-        name_node.push(value_text)
-        l_node.push(name_node)
-        # The scope_kind is the key, which shall
-        # be published under the scope-kind tag
-        scope_node = REXML::Element.new("scope-kind")
-        sk_name_node = REXML::Element.new("name")
-        value_text = REXML::Text.new(l)
-        sk_name_node.push(value_text)
-        scope_node.push(sk_name_node)
-        l_node.push(scope_node)
-        labels_child.push(l_node)
-      end
-
-      n_node.push(labels_child)
-
-      # array of destinations, containing their XML references
-      destinations_node = REXML::Element.new("destinations")
-      destinations_node.add_attribute("type", "array")
-      dests = getDestinations
-      dests.each do |d|
-        dest_node = REXML::Element.new("destination")
-        dest_node.add_attribute("type", d.getXMLType)
-        dest_node.push(d.toXMLRef(dom))
-        destinations_node.push(dest_node)
-      end
-
-      n_node.push(destinations_node)
-
-      # array of node attributes
-      nats = getNodeAttributes
-      node_attributes_child = REXML::Element.new("node-attributes")
-      node_attributes_child.add_attribute("type", "array")
-      nats.each do |l, attr|
-        # Each label is an entry in the labels dict
-        # The value is the caption, which shall
-        # be published under the "name" tag
-        nat_node = REXML::Element.new("node-attribute")
-
-        content_node = REXML::Element.new("content")
-        value_text = REXML::Text.new(attr["content"])
-        content_node.push(value_text)
-        nat_node.push(content_node)
-
-        name_node = REXML::Element.new("name")
-        value_text = REXML::Text.new(l)
-        name_node.push(value_text)
-        nat_node.push(name_node)
-
-        vis_node = REXML::Element.new("visibility")
-        vis_node.add_attribute("type", "boolean")
-        value_text = REXML::Text.new(attr["visibility"] ? "true" : "false")
-        vis_node.push(value_text)
-        nat_node.push(vis_node)
-
-        node_attributes_child.push(nat_node)
-      end
-
-      n_node.push(node_attributes_child)
-
-      # PORIS items, after calling this function using super().toXML(doc),
-      # will add additional nodes which will depend on the class
-
-      n_node
-    end
 
     # Creates the object instance from an XML node
-    def self.fromXML(n_node, pdoc)
+    def fromXML(n_node, pdoc)
       ret = nil
       name = nil
       ident = nil
@@ -361,6 +205,165 @@ module PORISXMLPatch
 
 
   end
+
+  module InstanceMethods
+
+
+    # Getter for the node name (tag name) which depends of the class.
+    # It will be overloaded by subclasses
+    def getXMLNodeName
+      "none"
+    end
+
+    # Getter for the nodetype which depends of the class.
+    # It will be overloaded by subclasses
+    def getXMLNodeType
+      0
+    end
+
+    # Getter for the type which depends of the class, by default is the class name
+    # It can overloaded by subclasses.
+    def getXMLType
+      self.class.name
+    end
+
+    # Builds a reference for the item, to be used mainly inside the "destination" tag
+    def toXMLRef(dom)
+      ret = REXML::Element.new("id")
+      ret.add_attribute("type", "integer")
+      value_text = REXML::Text.new(@id.to_s)
+      ret.push(value_text)
+      ret
+    end
+
+    # Dumps the current item to an XML node
+    # PORIS items, after calling this function using super().toXML(doc),
+    # will add additional nodes which will depend on the class
+    def toXML(dom)
+      # Tag name will be normally the class name, but it can be overloaded
+      # so we use a function to get it
+      n_node = REXML::Element.new(getXMLNodeName)
+
+      # subnode with the name of the item
+      name_child = REXML::Element.new("name")
+      value_text = REXML::Text.new(getName)
+      name_child.push(value_text)
+      n_node.push(name_child)
+
+      # subnode with an identifying integer
+      id_child = REXML::Element.new("id")
+      id_child.add_attribute("type", "integer")
+      value_text = REXML::Text.new(@id.to_s)
+      id_child.push(value_text)
+      n_node.push(id_child)
+
+      # subnode with the type
+      nodetype_child = REXML::Element.new("type")
+      value_text = REXML::Text.new(getXMLType)
+      nodetype_child.push(value_text)
+      n_node.push(nodetype_child)
+
+      # subnode with the node type id
+      nodetype_child = REXML::Element.new("node-type-id")
+      nodetype_child.add_attribute("type", "integer")
+      value_text = REXML::Text.new(getXMLNodeType.to_s)
+      nodetype_child.push(value_text)
+      n_node.push(nodetype_child)
+
+      # subnode with an identifying string
+      ident_child = REXML::Element.new("ident")
+      if (@ident == nil)
+        # Engineering modes, unknown modes, and unknown values have no ident
+        @ident = "VIRT-"+self.getId.to_s
+      end
+      value_text = REXML::Text.new(@ident)
+      ident_child.push(value_text)
+      n_node.push(ident_child)
+
+      # subnode with the project id
+      nodetype_child = REXML::Element.new("project-id")
+      nodetype_child.add_attribute("type", "integer")
+      value_text = REXML::Text.new(getProjectId.to_s)
+      nodetype_child.push(value_text)
+      n_node.push(nodetype_child)
+
+      # array of labels
+      lbs = getLabels
+      labels_child = REXML::Element.new("labels")
+      labels_child.add_attribute("type", "array")
+      lbs.each do |l, caption|
+        # Each label is an entry in the labels dict
+        # The value is the caption, which shall
+        # be published under the "name" tag
+        l_node = REXML::Element.new("label")
+        name_node = REXML::Element.new("name")
+        value_text = REXML::Text.new(caption)
+        name_node.push(value_text)
+        l_node.push(name_node)
+        # The scope_kind is the key, which shall
+        # be published under the scope-kind tag
+        scope_node = REXML::Element.new("scope-kind")
+        sk_name_node = REXML::Element.new("name")
+        value_text = REXML::Text.new(l)
+        sk_name_node.push(value_text)
+        scope_node.push(sk_name_node)
+        l_node.push(scope_node)
+        labels_child.push(l_node)
+      end
+
+      n_node.push(labels_child)
+
+      # array of destinations, containing their XML references
+      destinations_node = REXML::Element.new("destinations")
+      destinations_node.add_attribute("type", "array")
+      dests = getDestinations
+      dests.each do |d|
+        dest_node = REXML::Element.new("destination")
+        dest_node.add_attribute("type", d.getXMLType)
+        dest_node.push(d.toXMLRef(dom))
+        destinations_node.push(dest_node)
+      end
+
+      n_node.push(destinations_node)
+
+      # array of node attributes
+      nats = getNodeAttributes
+      node_attributes_child = REXML::Element.new("node-attributes")
+      node_attributes_child.add_attribute("type", "array")
+      nats.each do |l, attr|
+        # Each label is an entry in the labels dict
+        # The value is the caption, which shall
+        # be published under the "name" tag
+        nat_node = REXML::Element.new("node-attribute")
+
+        content_node = REXML::Element.new("content")
+        value_text = REXML::Text.new(attr["content"])
+        content_node.push(value_text)
+        nat_node.push(content_node)
+
+        name_node = REXML::Element.new("name")
+        value_text = REXML::Text.new(l)
+        name_node.push(value_text)
+        nat_node.push(name_node)
+
+        vis_node = REXML::Element.new("visibility")
+        vis_node.add_attribute("type", "boolean")
+        value_text = REXML::Text.new(attr["visibility"] ? "true" : "false")
+        vis_node.push(value_text)
+        nat_node.push(vis_node)
+
+        node_attributes_child.push(nat_node)
+      end
+
+      n_node.push(node_attributes_child)
+
+      # PORIS items, after calling this function using super().toXML(doc),
+      # will add additional nodes which will depend on the class
+
+      n_node
+    end
+
+  end
 end
 PORIS.send(:include, PORISXMLPatch)
 
@@ -379,6 +382,18 @@ module PORISValueXMLPatch
   end
 
   module ClassMethods
+
+    # Creates the object instance from an XML node
+    def fromXML(n_node, pdoc)
+      ret = super(n_node, pdoc)
+      if ret != nil then
+        ret.class = PORISValue
+        formatter = PORISValueFormatter.fromXMLRef(n_node)
+        ret.setXMLFormatter(formatter)
+      end
+      ret
+    end
+
   end
 
   module InstanceMethods
@@ -412,18 +427,6 @@ module PORISValueXMLPatch
       n_node
     end
 
-    # Creates the object instance from an XML node
-    def self.fromXML(n_node, pdoc)
-      ret = super(n_node, pdoc)
-      if ret != nil then
-        ret.class = PORISValue
-        formatter = PORISValueFormatter.fromXMLRef(n_node)
-        ret.setXMLFormatter(formatter)
-      end
-      ret
-    end
-
-
   end
 end
 PORISValue.send(:include, PORISValueXMLPatch)
@@ -442,6 +445,18 @@ module PORISValueDataXMLPatch
   end
 
   module ClassMethods
+
+    # Creates the object instance from an XML node
+    def fromXML(n_node, pdoc)
+      ret = super(n_node, pdoc)
+      if ret != nil then
+        ret.class = PORISValueData
+        formatter = PORISValueFormatter.fromXMLRef(n_node)
+        ret.setXMLFormatter(formatter)
+      end
+      ret
+    end
+
   end
 
   module InstanceMethods
@@ -456,17 +471,6 @@ module PORISValueDataXMLPatch
     # be instanced directly
     def getXMLNodeType
       0
-    end
-
-    # Creates the object instance from an XML node
-    def self.fromXML(n_node, pdoc)
-      ret = super(n_node, pdoc)
-      if ret != nil then
-        ret.class = PORISValueData
-        formatter = PORISValueFormatter.fromXMLRef(n_node)
-        ret.setXMLFormatter(formatter)
-      end
-      ret
     end
 
   end
@@ -487,6 +491,32 @@ module PORISValueStringXMLPatch
   end
 
   module ClassMethods
+
+    # Creates the object instance from an XML node
+    def fromXML(n_node, pdoc)
+      ret = super(n_node, pdoc)
+      if ret != nil then
+        ret.class = PORISValueString
+
+        listnodes = n_node.elements.to_a("default-string")
+        if listnodes.length > 0
+          defaultstringnode = listnodes[0]
+          if defaultstringnode.nil?
+            puts "ERROR! default string is None"
+          else
+            defaultstringnode.elements.each do |t|
+              if t.node_type == REXML::Text::NodeType
+                ret.setDefaultData(t.value)
+              end
+            end
+          end
+        end
+
+        formatter = PORISValueFormatter.fromXMLRef(n_node)
+        ret.setXMLFormatter(formatter)
+      end
+      ret
+    end
   end
 
   module InstanceMethods
@@ -514,32 +544,6 @@ module PORISValueStringXMLPatch
       n_node
     end
 
-    # Creates the object instance from an XML node
-    def self.fromXML(n_node, pdoc)
-      ret = super(n_node, pdoc)
-      if ret != nil then
-        ret.class = PORISValueString
-
-        listnodes = n_node.elements.to_a("default-string")
-        if listnodes.length > 0
-          defaultstringnode = listnodes[0]
-          if defaultstringnode.nil?
-            puts "ERROR! default string is None"
-          else
-            defaultstringnode.elements.each do |t|
-              if t.node_type == REXML::Text::NodeType
-                ret.setDefaultData(t.value)
-              end
-            end
-          end
-        end
-
-        formatter = PORISValueFormatter.fromXMLRef(n_node)
-        ret.setXMLFormatter(formatter)
-      end
-      ret
-    end
-
   end
 end
 PORISValueString.send(:include, PORISValueStringXMLPatch)
@@ -557,35 +561,9 @@ module PORISValueFilePathXMLPatch
   end
 
   module ClassMethods
-  end
-
-  module InstanceMethods
-
-    # Getter for the XML tag name of this item
-    def getXMLNodeName
-      "value-file-path"
-    end
-
-    # Dumps item to XML, uses super().toXML and
-    # appends specific nodes for this class
-    def toXML(dom)
-      n_node = super(dom)
-
-      extnode = REXML::Element.new("file-extension")
-      valueText = REXML::Text.new(@file_ext)
-      extnode.push(valueText)
-      n_node.add_element(extnode)
-
-      descnode = REXML::Element.new("file-description")
-      valueText = REXML::Text.new(@file_desc)
-      descnode.push(valueText)
-      n_node.add_element(descnode)
-
-      n_node
-    end
 
     # Creates the object instance from an XML node
-    def self.fromXML(n_node, pdoc)
+    def fromXML(n_node, pdoc)
       ret = super(n_node, pdoc)
       if ret != nil then
         ret.class = PORISValueFilePath
@@ -620,6 +598,32 @@ module PORISValueFilePathXMLPatch
       ret
     end
 
+  end
+
+  module InstanceMethods
+
+    # Getter for the XML tag name of this item
+    def getXMLNodeName
+      "value-file-path"
+    end
+
+    # Dumps item to XML, uses super().toXML and
+    # appends specific nodes for this class
+    def toXML(dom)
+      n_node = super(dom)
+
+      extnode = REXML::Element.new("file-extension")
+      valueText = REXML::Text.new(@file_ext)
+      extnode.push(valueText)
+      n_node.add_element(extnode)
+
+      descnode = REXML::Element.new("file-description")
+      valueText = REXML::Text.new(@file_desc)
+      descnode.push(valueText)
+      n_node.add_element(descnode)
+
+      n_node
+    end
 
   end
 end
@@ -639,54 +643,9 @@ module PORISValueDateXMLPatch
   end
 
   module ClassMethods
-  end
-
-  module InstanceMethods
-
-
-    # getter for the node type (overloading PORISValueString one)
-    def getXMLNodeType
-      5
-    end
-
-    # Getter for the XML tag name of this item
-    def getXMLNodeName
-      "value-date"
-    end
-
-    # getter for the XML tag name
-    def getXMLFormatter
-      PORISVALUEFORMATTER_DATE
-    end
-
-    # Dumps item to XML, uses super().toXML and
-    # appends specific nodes for this class
-    def toXML(dom)
-      n_node = super(dom)
-
-      minnode = REXML::Element.new("date-min")
-      minnode.add_attribute("type", "timestamp")
-      valueText = REXML::Text.new(@min_date)
-      minnode.push(valueText)
-      n_node.add_element(minnode)
-
-      maxnode = REXML::Element.new("date-max")
-      maxnode.add_attribute("type", "timestamp")
-      valueText = REXML::Text.new(@max_date)
-      maxnode.push(valueText)
-      n_node.add_element(maxnode)
-
-      defaultstringnode = REXML::Element.new("default-date")
-      defaultstringnode.add_attribute("type", "timestamp")
-      valueText = REXML::Text.new(getDefaultData)
-      defaultstringnode.push(valueText)
-      n_node.add_element(defaultstringnode)
-
-      n_node
-    end
 
     # Creates the object instance from an XML node
-    def self.fromXML(n_node, pdoc)
+    def fromXML(n_node, pdoc)
       ret = super(n_node, pdoc)
       if ret != nil then
         ret.class = PORISValueDate
@@ -733,6 +692,52 @@ module PORISValueDateXMLPatch
     end
 
   end
+
+  module InstanceMethods
+
+
+    # getter for the node type (overloading PORISValueString one)
+    def getXMLNodeType
+      5
+    end
+
+    # Getter for the XML tag name of this item
+    def getXMLNodeName
+      "value-date"
+    end
+
+    # getter for the XML tag name
+    def getXMLFormatter
+      PORISVALUEFORMATTER_DATE
+    end
+
+    # Dumps item to XML, uses super().toXML and
+    # appends specific nodes for this class
+    def toXML(dom)
+      n_node = super(dom)
+
+      minnode = REXML::Element.new("date-min")
+      minnode.add_attribute("type", "timestamp")
+      valueText = REXML::Text.new(@min_date)
+      minnode.push(valueText)
+      n_node.add_element(minnode)
+
+      maxnode = REXML::Element.new("date-max")
+      maxnode.add_attribute("type", "timestamp")
+      valueText = REXML::Text.new(@max_date)
+      maxnode.push(valueText)
+      n_node.add_element(maxnode)
+
+      defaultstringnode = REXML::Element.new("default-date")
+      defaultstringnode.add_attribute("type", "timestamp")
+      valueText = REXML::Text.new(getDefaultData)
+      defaultstringnode.push(valueText)
+      n_node.add_element(defaultstringnode)
+
+      n_node
+    end
+
+  end
 end
 PORISValueDate.send(:include, PORISValueDateXMLPatch)
 
@@ -749,48 +754,9 @@ module PORISValueFloatXMLPatch
   end
 
   module ClassMethods
-  end
-
-  module InstanceMethods
-
-    # getter for the XML tag name
-    def getXMLNodeName
-      "value-double-range"
-    end
-
-    # getter for the formatter, overload super()'s
-    def getXMLFormatter
-      PORISVALUEFORMATTER_REAL
-    end
-
-    # Dumps item to XML, uses super().toXML and
-    # appends specific nodes for this class
-    def toXML(dom)
-      n_node = super(dom)
-
-      defaultfloatnode = REXML::Element.new("default-float")
-      defaultfloatnode.add_attribute("type", "float")
-      valueText = REXML::Text.new(getDefaultData.to_s)
-      defaultfloatnode.push(valueText)
-      n_node.add_element(defaultfloatnode)
-
-      rangeminnode = REXML::Element.new("rangemin")
-      rangeminnode.add_attribute("type", "float")
-      valueText = REXML::Text.new(getMin.to_s)
-      rangeminnode.push(valueText)
-      n_node.add_element(rangeminnode)
-
-      rangemaxnode = REXML::Element.new("rangemax")
-      rangemaxnode.add_attribute("type", "float")
-      valueText = REXML::Text.new(getMax.to_s)
-      rangemaxnode.push(valueText)
-      n_node.add_element(rangemaxnode)
-
-      n_node
-    end
 
     # Creates the object instance from an XML node
-    def self.fromXML(n_node, pdoc)
+    def fromXML(n_node, pdoc)
       ret = super(n_node, pdoc)
       if ret != nil then
         ret.class = PORISValueFloat
@@ -835,6 +801,46 @@ module PORISValueFloatXMLPatch
     end
 
   end
+
+  module InstanceMethods
+
+    # getter for the XML tag name
+    def getXMLNodeName
+      "value-double-range"
+    end
+
+    # getter for the formatter, overload super()'s
+    def getXMLFormatter
+      PORISVALUEFORMATTER_REAL
+    end
+
+    # Dumps item to XML, uses super().toXML and
+    # appends specific nodes for this class
+    def toXML(dom)
+      n_node = super(dom)
+
+      defaultfloatnode = REXML::Element.new("default-float")
+      defaultfloatnode.add_attribute("type", "float")
+      valueText = REXML::Text.new(getDefaultData.to_s)
+      defaultfloatnode.push(valueText)
+      n_node.add_element(defaultfloatnode)
+
+      rangeminnode = REXML::Element.new("rangemin")
+      rangeminnode.add_attribute("type", "float")
+      valueText = REXML::Text.new(getMin.to_s)
+      rangeminnode.push(valueText)
+      n_node.add_element(rangeminnode)
+
+      rangemaxnode = REXML::Element.new("rangemax")
+      rangemaxnode.add_attribute("type", "float")
+      valueText = REXML::Text.new(getMax.to_s)
+      rangemaxnode.push(valueText)
+      n_node.add_element(rangemaxnode)
+
+      n_node
+    end
+
+  end
 end
 PORISValueFloat.send(:include, PORISValueFloatXMLPatch)
 
@@ -852,6 +858,45 @@ module PORISModeXMLPatch
   end
 
   module ClassMethods
+
+    # Creates the object instance from an XML node
+    def fromXML(n_node, pdoc)
+      ret = super(n_node, pdoc)
+      if ret != nil then
+        ret.class = PORISMode
+        # TODO: Parse these values
+        ret.values = {}
+        ret.submodes = {}
+        ret.default_value = nil
+
+        dest_node = n_node.get_elements_by_tag_name("destinations")[0]
+        # puts "destnode: #{dest_node.local_name}"
+        dest = nil
+        # puts ret.getName
+        dest_node.child_nodes.each do |d|
+          if d.local_name == "destination"
+            # puts "d.localname: #{d.local_name}"
+            dest = PORIS.fromXMLRef(d, pdoc)
+            # puts "d: #{dest.getName}"
+            if dest
+              if dest.is_a?(PORISValue)
+                # Let's see the destinations to know if it is a PORISSys or a PORISParam
+                ret.addValue(dest)
+                # puts ret.values
+              end
+
+              if dest.is_a?(PORISMode)
+                # Let's see the destinations to know if it is a PORISSys or a PORISParam
+                ret.add_sub_mode(dest)
+                # puts ret.submodes
+              end
+            end
+          end
+        end
+      end
+      ret
+    end
+
   end
 
   module InstanceMethods
@@ -889,45 +934,6 @@ module PORISModeXMLPatch
       n_node
     end
 
-    # Creates the object instance from an XML node
-    def self.fromXML(n_node, pdoc)
-      ret = super(n_node, pdoc)
-      if ret != nil then
-        ret.class = PORISMode
-        # TODO: Parse these values
-        ret.values = {}
-        ret.submodes = {}
-        ret.default_value = nil
-
-        dest_node = n_node.get_elements_by_tag_name("destinations")[0]
-        # puts "destnode: #{dest_node.local_name}"
-        dest = nil
-        # puts ret.getName
-        dest_node.child_nodes.each do |d|
-          if d.local_name == "destination"
-            # puts "d.localname: #{d.local_name}"
-            dest = PORIS.fromXMLRef(d, pdoc)
-            # puts "d: #{dest.getName}"
-            if dest
-              if dest.is_a?(PORISValue)
-                # Let's see the destinations to know if it is a PORISSys or a PORISParam
-                ret.addValue(dest)
-                # puts ret.values
-              end
-
-              if dest.is_a?(PORISMode)
-                # Let's see the destinations to know if it is a PORISSys or a PORISParam
-                ret.add_sub_mode(dest)
-                # puts ret.submodes
-              end
-            end
-          end
-        end
-      end
-      ret
-    end
-
-
   end
 end
 PORISMode.send(:include, PORISModeXMLPatch)
@@ -945,6 +951,66 @@ module PORISNodeXMLPatch
   end
 
   module ClassMethods
+
+    # Creates the object instance from an XML node
+    def executeXMLParser(n_node, pdoc)
+      typenode = n_node.getElementsByTagName("type")[0]
+      t = typenode.firstChild.nodeValue
+      if t == "PORISParam"
+        return PORISParam.fromXML(n_node, pdoc)
+      elsif t == "PORISSys"
+        return PORISSys.fromXML(n_node, pdoc)
+      end
+
+      # Let's see the destinations to know if it is a PORISSys or a PORISParam
+      namenode = n_node.getElementsByTagName("name")[0]
+      name = namenode.firstChild.nodeValue
+      # puts "****** Parsing #{t} #{name}"
+
+      destnode = n_node.getElementsByTagName("destinations")[0]
+      destnode.children.each do |d|
+        if d.nodeType != d.TEXT_NODE
+          # puts "Name #{d.xpath}"
+          if d.getAttribute("type") == "PORISNode" || d.getAttribute("type") == "PORISSys" || d.getAttribute("type") == "PORISParam"
+            # puts "Is a system"
+            return PORISSys.fromXML(n_node, pdoc)
+          end
+        end
+      end
+      # puts "Is a param"
+      PORISParam.fromXML(n_node, pdoc)
+    end
+
+    def fromXML(n_node, pdoc)
+      ret = super(PORISNode, PORISNode).fromXML(n_node, pdoc)
+      if ret != nil then
+        ret.class = PORISNode
+        ret.modes = {}
+        ret.selectedMode = nil
+        ret.defaultMode = nil
+
+        destnode = n_node.getElementsByTagName("destinations")[0]
+        # puts "destnode: #{destnode.xpath}"
+        dest = nil
+        # puts ret.getName
+        destnode.children.each do |d|
+          if d.nodeType != d.TEXT_NODE
+            dest = PORIS.fromXMLRef(d, pdoc)
+            # puts "d: #{dest.getName}"
+            if dest
+              if dest.is_a?(PORISMode)
+                # Let's see the destinations to know if it is a PORISSys or a PORISParam
+                ret.addMode(dest)
+                # puts ret.modes
+              end
+            end
+          end
+        end
+      end
+      ret
+    end
+
+
   end
 
   module InstanceMethods
@@ -988,65 +1054,6 @@ module PORISNodeXMLPatch
       n_node
     end
 
-    # Creates the object instance from an XML node
-    def self.executeXMLParser(n_node, pdoc)
-      typenode = n_node.getElementsByTagName("type")[0]
-      t = typenode.firstChild.nodeValue
-      if t == "PORISParam"
-        return PORISParam.fromXML(n_node, pdoc)
-      elsif t == "PORISSys"
-        return PORISSys.fromXML(n_node, pdoc)
-      end
-
-      # Let's see the destinations to know if it is a PORISSys or a PORISParam
-      namenode = n_node.getElementsByTagName("name")[0]
-      name = namenode.firstChild.nodeValue
-      # puts "****** Parsing #{t} #{name}"
-
-      destnode = n_node.getElementsByTagName("destinations")[0]
-      destnode.children.each do |d|
-        if d.nodeType != d.TEXT_NODE
-          # puts "Name #{d.xpath}"
-          if d.getAttribute("type") == "PORISNode" || d.getAttribute("type") == "PORISSys" || d.getAttribute("type") == "PORISParam"
-            # puts "Is a system"
-            return PORISSys.fromXML(n_node, pdoc)
-          end
-        end
-      end
-      # puts "Is a param"
-      PORISParam.fromXML(n_node, pdoc)
-    end
-
-    def self.fromXML(n_node, pdoc)
-      ret = super(PORISNode, PORISNode).fromXML(n_node, pdoc)
-      if ret != nil then
-        ret.class = PORISNode
-        ret.modes = {}
-        ret.selectedMode = nil
-        ret.defaultMode = nil
-
-        destnode = n_node.getElementsByTagName("destinations")[0]
-        # puts "destnode: #{destnode.xpath}"
-        dest = nil
-        # puts ret.getName
-        destnode.children.each do |d|
-          if d.nodeType != d.TEXT_NODE
-            dest = PORIS.fromXMLRef(d, pdoc)
-            # puts "d: #{dest.getName}"
-            if dest
-              if dest.is_a?(PORISMode)
-                # Let's see the destinations to know if it is a PORISSys or a PORISParam
-                ret.addMode(dest)
-                # puts ret.modes
-              end
-            end
-          end
-        end
-      end
-      ret
-    end
-
-
   end
 end
 PORISNode.send(:include, PORISNodeXMLPatch)
@@ -1065,6 +1072,25 @@ module PORISParamXMLPatch
   end
 
   module ClassMethods
+
+    def fromXML(n_node, pdoc)
+      ret = super(n_node, pdoc)
+      if ret != nil then
+        ret.extend(PORISParam)
+        ret.values = {}
+        ret.instance_variable_set(:@selected_value, nil)
+
+        destnode = n_node.elements["destinations"]
+        destnode.elements.each do |d|
+          dest = PORIS.fromXMLRef(d, pdoc)
+          if dest && dest.is_a?(PORISValue)
+            ret.addValue(dest)
+          end
+        end
+      end
+      ret
+    end
+
   end
 
   module InstanceMethods
@@ -1087,24 +1113,6 @@ module PORISParamXMLPatch
       n_node
     end
 
-    def self.fromXML(n_node, pdoc)
-      ret = super(n_node, pdoc)
-      if ret != nil then
-        ret.extend(PORISParam)
-        ret.values = {}
-        ret.instance_variable_set(:@selected_value, nil)
-
-        destnode = n_node.elements["destinations"]
-        destnode.elements.each do |d|
-          dest = PORIS.fromXMLRef(d, pdoc)
-          if dest && dest.is_a?(PORISValue)
-            ret.addValue(dest)
-          end
-        end
-      end
-      ret
-    end
-
   end
 end
 PORISParam.send(:include, PORISParamXMLPatch)
@@ -1123,20 +1131,8 @@ module PORISSysXMLPatch
   end
 
   module ClassMethods
-  end
 
-  module InstanceMethods
-
-
-    def getXMLType
-      "PORISNode"
-    end
-
-    def getXMLNodeName
-      "sub-system"
-    end
-
-    def self.fromXML(n_node, pdoc)
+    def fromXML(n_node, pdoc)
       ret = super(n_node, pdoc)
       if ret != nil then
         ret.class = PORISSys
@@ -1156,6 +1152,19 @@ module PORISSysXMLPatch
         end
       end
       ret
+    end
+
+  end
+
+  module InstanceMethods
+
+
+    def getXMLType
+      "PORISNode"
+    end
+
+    def getXMLNodeName
+      "sub-system"
     end
 
   end
