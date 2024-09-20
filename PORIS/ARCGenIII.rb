@@ -1,5 +1,6 @@
 require_relative 'PORISXML'
 require_relative 'PORISRuby'
+require_relative 'PORISGraphML'
 require_relative 'PORIS'
 
 class ARCGenIIIPORIS < PORISDoc
@@ -661,4 +662,8 @@ calibmode.getSubModes.each{|k, m| puts(m.getId.to_s+" "+m.getName)}
 xmlmodel = thismodel.toXML
 puts(xmlmodel.to_s)
 
-puts(thismodel.toRuby)
+graphMLmodel = thismodel.toGraphML
+puts(graphMLmodel.to_s)
+
+
+#puts(thismodel.toRuby)
