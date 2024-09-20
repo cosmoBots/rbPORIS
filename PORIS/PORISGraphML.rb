@@ -236,129 +236,71 @@ module PORISGraphMLPatch
       ret
     end
 
+    def addGraphMLShapeToNode(dom, content_node)
+      data_child = REXML::Element.new("error")
+      data_child.add_attribute("ERROR", "******* #{self.getName}:#{self.class.name} *************")
+      content_node.push(data_child)
+    end
+
+
     # Dumps the current item to an GraphML node
     # PORIS items, after calling this function using super().toGraphML(doc),
     # will add additional nodes which will depend on the class
     def toGraphML(dom)
       # Tag name will be normally the class name, but it can be overloaded
       # so we use a function to get it
-      n_node = REXML::Element.new(getGraphMLNodeName)
+      n_node = REXML::Element.new("node")
 
-      # subnode with the name of the item
-      name_child = REXML::Element.new("name")
-      value_text = REXML::Text.new(getName)
-      name_child.push(value_text)
-      n_node.push(name_child)
+=begin
+      <node id="n0::n5::n5::n0::n3::n0">
+      <data key="d9" xml:space="preserve"><![CDATA[ARC-0081]]></data>
+      <data key="d10" xml:space="preserve">81</data>
+      <data key="d11" xml:space="preserve"><![CDATA[arcgen]]></data>
+      <data key="d13" xml:space="preserve"><![CDATA[http://csys.cosmobots.eu:3000/issues/81]]></data>
+    </node>
+=end
+
+      n_node.add_attribute("id", "id_#{self.getId.to_s}")
 
       # subnode with an identifying integer
-      id_child = REXML::Element.new("id")
-      id_child.add_attribute("type", "integer")
-      value_text = REXML::Text.new(@id.to_s)
+      id_child = REXML::Element.new("data")
+      id_child.add_attribute("key", "d9")
+      id_child.add_attribute("xml:space", "preserve")
+      value_text = REXML::CData.new(self.getIdent)
       id_child.push(value_text)
       n_node.push(id_child)
 
-      # subnode with the type
-      nodetype_child = REXML::Element.new("type")
-      value_text = REXML::Text.new(getGraphMLType)
-      nodetype_child.push(value_text)
-      n_node.push(nodetype_child)
+      # subnode with an identifying integer
+      id_child = REXML::Element.new("data")
+      id_child.add_attribute("key", "d10")
+      id_child.add_attribute("xml:space", "preserve")
+      value_text = REXML::Text.new(self.getRmId.to_s)
+      id_child.push(value_text)
+      n_node.push(id_child)
 
-      # subnode with the node type id
-      nodetype_child = REXML::Element.new("node-type-id")
-      nodetype_child.add_attribute("type", "integer")
-      value_text = REXML::Text.new(getGraphMLNodeType.to_s)
-      nodetype_child.push(value_text)
-      n_node.push(nodetype_child)
 
-      # subnode with an identifying string
-      ident_child = REXML::Element.new("ident")
-      if (@ident == nil)
-        # Engineering modes, unknown modes, and unknown values have no ident
-        @ident = "VIRT-"+self.getId.to_s
-      end
-      value_text = REXML::Text.new(@ident)
-      ident_child.push(value_text)
-      n_node.push(ident_child)
+      # subnode with an identifying integer
+      id_child = REXML::Element.new("data")
+      id_child.add_attribute("key", "d11")
+      id_child.add_attribute("xml:space", "preserve")
+      value_text = REXML::CData.new(self.getDocument.getRmId)
+      id_child.push(value_text)
+      n_node.push(id_child)
 
-      # subnode with the project id
-      nodetype_child = REXML::Element.new("project-id")
-      nodetype_child.add_attribute("type", "integer")
-      value_text = REXML::Text.new(getProjectId.to_s)
-      nodetype_child.push(value_text)
-      n_node.push(nodetype_child)
 
-      # array of labels
-      lbs = getLabels
-      labels_child = REXML::Element.new("labels")
-      labels_child.add_attribute("type", "array")
-      lbs.each do |l, caption|
-        # Each label is an entry in the labels dict
-        # The value is the caption, which shall
-        # be published under the "name" tag
-        l_node = REXML::Element.new("label")
-        name_node = REXML::Element.new("name")
-        value_text = REXML::Text.new(caption)
-        name_node.push(value_text)
-        l_node.push(name_node)
-        # The scope_kind is the key, which shall
-        # be published under the scope-kind tag
-        scope_node = REXML::Element.new("scope-kind")
-        sk_name_node = REXML::Element.new("name")
-        value_text = REXML::Text.new(l)
-        sk_name_node.push(value_text)
-        scope_node.push(sk_name_node)
-        l_node.push(scope_node)
-        labels_child.push(l_node)
-      end
+      # subnode with an identifying integer
+      id_child = REXML::Element.new("data")
+      id_child.add_attribute("key", "d13")
+      id_child.add_attribute("xml:space", "preserve")
+      value_text = REXML::CData.new("https://dev.csys.cosmobots.eu/issues/self.getRmId.to_s")
+      id_child.push(value_text)
+      n_node.push(id_child)
 
-      n_node.push(labels_child)
-
-      # array of destinations, containing their GraphML references
-      destinations_node = REXML::Element.new("destinations")
-      destinations_node.add_attribute("type", "array")
-      dests = getDestinations
-      dests.each do |d|
-        dest_node = REXML::Element.new("destination")
-        dest_node.add_attribute("type", d.getGraphMLType)
-        dest_node.push(d.toGraphMLRef(dom))
-        destinations_node.push(dest_node)
-      end
-
-      n_node.push(destinations_node)
-
-      # array of node attributes
-      nats = getNodeAttributes
-      node_attributes_child = REXML::Element.new("node-attributes")
-      node_attributes_child.add_attribute("type", "array")
-      nats.each do |l, attr|
-        # Each label is an entry in the labels dict
-        # The value is the caption, which shall
-        # be published under the "name" tag
-        nat_node = REXML::Element.new("node-attribute")
-
-        content_node = REXML::Element.new("content")
-        value_text = REXML::Text.new(attr["content"])
-        content_node.push(value_text)
-        nat_node.push(content_node)
-
-        name_node = REXML::Element.new("name")
-        value_text = REXML::Text.new(l)
-        name_node.push(value_text)
-        nat_node.push(name_node)
-
-        vis_node = REXML::Element.new("visibility")
-        vis_node.add_attribute("type", "boolean")
-        value_text = REXML::Text.new(attr["visibility"] ? "true" : "false")
-        vis_node.push(value_text)
-        nat_node.push(vis_node)
-
-        node_attributes_child.push(nat_node)
-      end
-
-      n_node.push(node_attributes_child)
-
-      # PORIS items, after calling this function using super().toGraphML(doc),
-      # will add additional nodes which will depend on the class
+      # subnode with an identifying integer
+      data_child = REXML::Element.new("data")
+      data_child.add_attribute("key", "d15")
+      addGraphMLShapeToNode(dom, data_child)
+      n_node.push(data_child)
 
       n_node
     end
@@ -417,19 +359,68 @@ module PORISValueGraphMLPatch
       @__formatter = PORISVALUEFORMATTER_NIL
     end
 
-    # Dumps the item's GraphML (uses PORIS superclass' one and appends information of the formatter)
-    def toGraphML(dom)
-      # puts(dom)
-      # puts("toGraphML self ", self.getName)
-      # puts("toGraphML super ", super.getName)
-      n_node = super(dom)
-      n_node.add_element(getGraphMLFormatter.toGraphMLRef(dom))
-      n_node
+    # Dumps item to GraphML, uses super().toGraphML and
+    # appends specific nodes for this class
+    def addGraphMLShapeToNode(dom, content_node)
+
+      shape_node = REXML::Element.new("y:ShapeNode")
+
+      thisnode = REXML::Element.new("y:Geometry")
+      thisnode.add_attribute("height", "30.0")
+      thisnode.add_attribute("width", "30.0")
+      thisnode.add_attribute("x", "610.0")
+      thisnode.add_attribute("y", "913.0")
+      shape_node.push(thisnode)
+
+      thisnode = REXML::Element.new("y:Fill")
+      thisnode.add_attribute("color", "#99CCFF")
+      thisnode.add_attribute("transparent", "false")
+      shape_node.push(thisnode)
+
+      thisnode = REXML::Element.new("y:BorderStyle")
+      thisnode.add_attribute("color", "#000000")
+      thisnode.add_attribute("type", "line")
+      thisnode.add_attribute("width", "1.0")
+      shape_node.push(thisnode)
+
+      thisnode = REXML::Element.new("y:NodeLabel")
+      thisnode.add_attribute("alignment", "center")
+      thisnode.add_attribute("autoSizePolicy", "content")
+      thisnode.add_attribute("fontFamily", "Dialog")
+      thisnode.add_attribute("fontSize", "12")
+      thisnode.add_attribute("fontStyle", "plain")
+      thisnode.add_attribute("hasBackgroundColor", "false")
+      thisnode.add_attribute("hasLineColor", "false")
+      thisnode.add_attribute("height", "17.96875")
+      thisnode.add_attribute("horizontalTextPosition", "center")
+      thisnode.add_attribute("iconTextGap", "4")
+      thisnode.add_attribute("modelName", "internal")
+      thisnode.add_attribute("modelPosition", "c")
+      thisnode.add_attribute("textColor", "#000000")
+      thisnode.add_attribute("verticalTextPosition", "bottom")
+      thisnode.add_attribute("visible", "true")
+      thisnode.add_attribute("width", "26.37109375")
+      thisnode.add_attribute("x", "1.814453125")
+      thisnode.add_attribute("xml:space", "preserve")
+      thisnode.add_attribute("y", "6.015625")
+      value_text = REXML::Text.new(self.getName)
+      thisnode.push(value_text)
+      shape_node.push(thisnode)
+
+      thisnode = REXML::Element.new("y:Shape")
+      thisnode.add_attribute("type", "parallelogram")
+      shape_node.push(thisnode)
+
+      content_node.push(shape_node)
+
     end
 
   end
 end
 PORISValue.send(:include, PORISValueGraphMLPatch)
+
+
+
 
 
 ######### PORISValueData #################
@@ -531,19 +522,6 @@ module PORISValueStringGraphMLPatch
       6
     end
 
-    # Dumps item to GraphML, uses super().toGraphML and
-    # appends specific nodes for this class
-    def toGraphML(dom)
-      n_node = super(dom)
-
-      defaultstringnode = REXML::Element.new("default-string")
-      valueText = REXML::Text.new(getDefaultData)
-      defaultstringnode.push(valueText)
-      n_node.add_element(defaultstringnode)
-
-      n_node
-    end
-
   end
 end
 PORISValueString.send(:include, PORISValueStringGraphMLPatch)
@@ -605,24 +583,6 @@ module PORISValueFilePathGraphMLPatch
     # Getter for the GraphML tag name of this item
     def getGraphMLNodeName
       "value-file-path"
-    end
-
-    # Dumps item to GraphML, uses super().toGraphML and
-    # appends specific nodes for this class
-    def toGraphML(dom)
-      n_node = super(dom)
-
-      extnode = REXML::Element.new("file-extension")
-      valueText = REXML::Text.new(@file_ext)
-      extnode.push(valueText)
-      n_node.add_element(extnode)
-
-      descnode = REXML::Element.new("file-description")
-      valueText = REXML::Text.new(@file_desc)
-      descnode.push(valueText)
-      n_node.add_element(descnode)
-
-      n_node
     end
 
   end
@@ -711,32 +671,6 @@ module PORISValueDateGraphMLPatch
       PORISVALUEFORMATTER_DATE
     end
 
-    # Dumps item to GraphML, uses super().toGraphML and
-    # appends specific nodes for this class
-    def toGraphML(dom)
-      n_node = super(dom)
-
-      minnode = REXML::Element.new("date-min")
-      minnode.add_attribute("type", "timestamp")
-      valueText = REXML::Text.new(@min_date)
-      minnode.push(valueText)
-      n_node.add_element(minnode)
-
-      maxnode = REXML::Element.new("date-max")
-      maxnode.add_attribute("type", "timestamp")
-      valueText = REXML::Text.new(@max_date)
-      maxnode.push(valueText)
-      n_node.add_element(maxnode)
-
-      defaultstringnode = REXML::Element.new("default-date")
-      defaultstringnode.add_attribute("type", "timestamp")
-      valueText = REXML::Text.new(getDefaultData)
-      defaultstringnode.push(valueText)
-      n_node.add_element(defaultstringnode)
-
-      n_node
-    end
-
   end
 end
 PORISValueDate.send(:include, PORISValueDateGraphMLPatch)
@@ -816,28 +750,157 @@ module PORISValueFloatGraphMLPatch
 
     # Dumps item to GraphML, uses super().toGraphML and
     # appends specific nodes for this class
-    def toGraphML(dom)
-      n_node = super(dom)
+    def addGraphMLShapeToNode(dom, content_node)
 
-      defaultfloatnode = REXML::Element.new("default-float")
-      defaultfloatnode.add_attribute("type", "float")
-      valueText = REXML::Text.new(getDefaultData.to_s)
-      defaultfloatnode.push(valueText)
-      n_node.add_element(defaultfloatnode)
+=begin
 
-      rangeminnode = REXML::Element.new("rangemin")
-      rangeminnode.add_attribute("type", "float")
-      valueText = REXML::Text.new(getMin.to_s)
-      rangeminnode.push(valueText)
-      n_node.add_element(rangeminnode)
+      PORISValue
 
-      rangemaxnode = REXML::Element.new("rangemax")
-      rangemaxnode.add_attribute("type", "float")
-      valueText = REXML::Text.new(getMax.to_s)
-      rangemaxnode.push(valueText)
-      n_node.add_element(rangemaxnode)
+      <data key="d15">
+        <y:ShapeNode>
 
-      n_node
+          <y:Geometry height="30.0" width="30.0" x="640.6763137032586" y="913.1919259494838"/>
+          <y:Fill color="#99CCFF" transparent="false"/>
+          <y:BorderStyle color="#000000" type="line" width="1.0"/>
+          <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="17.96875" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="c" textColor="#000000" verticalTextPosition="bottom" visible="true" width="26.37109375" x="1.814453125" xml:space="preserve" y="6.015625">1x1</y:NodeLabel>
+
+          <y:Shape type="parallelogram"/>
+        </y:ShapeNode>
+      </data>
+
+
+      PORISValueFloat
+
+
+      <data key="d15">
+        <y:ShapeNode>
+          <y:Geometry height="46.0" width="134.0" x="437.17631370325864" y="1488.2614772156162"/>
+          <y:Fill color="#CCCCFF" transparent="false"/>
+          <y:BorderStyle color="#000000" type="line" width="1.0"/>
+          <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="17.96875" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="tr" textColor="#000000" verticalTextPosition="bottom" visible="true" width="69.47265625" x="60.52734375" xml:space="preserve" y="4.0">
+            Full_Range
+          </y:NodeLabel>
+          <y:NodeLabel alignment="center" autoSizePolicy="content" backgroundColor="#FFFFFF" fontFamily="Dialog" fontSize="12" fontStyle="bold" hasLineColor="false" height="17.96875" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#0000FF" verticalTextPosition="bottom" visible="true" width="107.6171875" x="13.19140625" xml:space="preserve" y="20.956670673077042">
+            0 &lt; 200 &lt; 1000
+            <y:LabelModel>
+              <y:SmartNodeLabelModel distance="4.0"/>
+            </y:LabelModel>
+            <y:ModelParameter>
+              <y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.5" nodeRatioX="0.0" nodeRatioY="0.3462047972408028" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/>
+            </y:ModelParameter>
+          </y:NodeLabel>
+          <y:Shape type="parallelogram"/>
+        </y:ShapeNode>
+      </data>
+=end
+
+      shape_node = REXML::Element.new("y:ShapeNode")
+
+      thisnode = REXML::Element.new("y:Geometry")
+      thisnode.add_attribute("height", "46.0")
+      thisnode.add_attribute("width", "134.0")
+      thisnode.add_attribute("x", "437.0")
+      thisnode.add_attribute("y", "1488.0")
+      shape_node.push(thisnode)
+
+      thisnode = REXML::Element.new("y:Fill")
+      thisnode.add_attribute("color", "#CCCCFF")
+      thisnode.add_attribute("transparent", "false")
+      shape_node.push(thisnode)
+
+      thisnode = REXML::Element.new("y:BorderStyle")
+      thisnode.add_attribute("color", "#000000")
+      thisnode.add_attribute("type", "line")
+      thisnode.add_attribute("width", "1.0")
+      shape_node.push(thisnode)
+
+
+      thisnode = REXML::Element.new("y:NodeLabel")
+      thisnode.add_attribute("alignment", "center")
+      thisnode.add_attribute("autoSizePolicy", "content")
+      thisnode.add_attribute("fontFamily", "Dialog")
+      thisnode.add_attribute("fontSize", "12")
+      thisnode.add_attribute("fontStyle", "plain")
+      thisnode.add_attribute("hasBackgroundColor", "false")
+      thisnode.add_attribute("hasLineColor", "false")
+      thisnode.add_attribute("height", "17.96875")
+      thisnode.add_attribute("horizontalTextPosition", "center")
+      thisnode.add_attribute("iconTextGap", "4")
+      thisnode.add_attribute("modelName", "internal")
+      thisnode.add_attribute("modelPosition", "tr")
+      thisnode.add_attribute("textColor", "#000000")
+      thisnode.add_attribute("verticalTextPosition", "bottom")
+      thisnode.add_attribute("visible", "true")
+      thisnode.add_attribute("width", "69.47265625")
+      thisnode.add_attribute("x", "60.52734375")
+      thisnode.add_attribute("xml:space", "preserve")
+      thisnode.add_attribute("y", "4.0")
+      value_text = REXML::Text.new(self.getName)
+      thisnode.push(value_text)
+      shape_node.push(thisnode)
+
+      thisnode = REXML::Element.new("y:NodeLabel")
+      thisnode.add_attribute("alignment", "center")
+      thisnode.add_attribute("autoSizePolicy", "content")
+      thisnode.add_attribute("backgroundColor", "#FFFFFF")
+      thisnode.add_attribute("fontFamily", "Dialog")
+      thisnode.add_attribute("fontSize", "12")
+      thisnode.add_attribute("fontStyle", "bold")
+      # thisnode.add_attribute("hasBackgroundColor", "false")
+      thisnode.add_attribute("hasLineColor", "false")
+      thisnode.add_attribute("height", "17.96875")
+      thisnode.add_attribute("horizontalTextPosition", "center")
+      thisnode.add_attribute("iconTextGap", "4")
+      thisnode.add_attribute("modelName", "custom")
+      # thisnode.add_attribute("modelPosition", "tr")
+      thisnode.add_attribute("textColor", "#0000FF")
+      thisnode.add_attribute("verticalTextPosition", "bottom")
+      thisnode.add_attribute("visible", "true")
+      thisnode.add_attribute("width", "107.62")
+      thisnode.add_attribute("x", "13.19140625")
+      thisnode.add_attribute("xml:space", "preserve")
+      thisnode.add_attribute("y", "20.956670673077042")
+      value_text = REXML::Text.new(self.getMin.to_s + ' < ' + self.getDefaultData.to_s + ' < ' + self.getMax.to_s)
+      thisnode.push(value_text)
+
+=begin
+            <y:LabelModel>
+              <y:SmartNodeLabelModel distance="4.0"/>
+            </y:LabelModel>
+            <y:ModelParameter>
+              <y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.5" nodeRatioX="0.0" nodeRatioY="0.3462047972408028" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/>
+            </y:ModelParameter>
+=end
+
+
+      thissubnode = REXML::Element.new("y:LabelModel")
+      thissubnsubode = REXML::Element.new("y:SmartNodeLabelModel")
+      thissubnsubode.add_attribute("distance", "4.0")
+      thissubnode.push(thissubnsubode)
+      thisnode.push(thissubnode)
+
+      thissubnode = REXML::Element.new("y:ModelParameter")
+      thissubnsubode = REXML::Element.new("y:SmartNodeLabelModelParameter")
+      thissubnsubode.add_attribute("labelRatioX", "0.0")
+      thissubnsubode.add_attribute("labelRatioY", "0.5")
+      thissubnsubode.add_attribute("nodeRatioX", "0.0")
+      thissubnsubode.add_attribute("nodeRatioY", "0.3462047972408028")
+      thissubnsubode.add_attribute("offsetX", "0.0")
+      thissubnsubode.add_attribute("offsetY", "0.0")
+      thissubnsubode.add_attribute("upX", "0.0")
+      thissubnsubode.add_attribute("upY", "1.0")
+      thissubnode.push(thissubnsubode)
+      thisnode.push(thissubnode)
+
+      shape_node.push(thisnode)
+
+
+      thisnode = REXML::Element.new("y:Shape")
+      thisnode.add_attribute("type", "parallelogram")
+      shape_node.push(thisnode)
+
+      content_node.push(shape_node)
+
     end
 
   end
@@ -912,26 +975,60 @@ module PORISModeGraphMLPatch
       6
     end
 
-    # Dumps the GraphML node from this PORISMode
-    def toGraphML(dom)
-      n_node = super(dom)
-      # TODO: Think if it makes sense to have a default submode???
-      default_mode_node = REXML::Element.new("default-mode-id")
-      default_mode_node.add_attribute("type", "integer")
-      default_mode_node.add_attribute("nil", "true")
-      n_node.push(default_mode_node)
-      default_value_node = REXML::Element.new("default-value-id")
-      default_value_node.add_attribute("type", "integer")
-      v = self.getDefaultValue
-      if v.nil?
-        default_value_node.add_attribute("nil", "true")
-      else
-        default_value_text = REXML::Text.new(v.getId.to_s)
-        default_value_node.push(default_value_text) if default_value_text
-      end
-      n_node.push(default_value_node)
+    # Dumps item to GraphML, uses super().toGraphML and
+    # appends specific nodes for this class
+    def addGraphMLShapeToNode(dom, content_node)
 
-      n_node
+      shape_node = REXML::Element.new("y:ShapeNode")
+
+      thisnode = REXML::Element.new("y:Geometry")
+      thisnode.add_attribute("height", "30.0")
+      thisnode.add_attribute("width", "65.0")
+      thisnode.add_attribute("x", "289.0")
+      thisnode.add_attribute("y", "782.0")
+      shape_node.push(thisnode)
+
+      thisnode = REXML::Element.new("y:Fill")
+      thisnode.add_attribute("color", "#FFCC00")
+      thisnode.add_attribute("transparent", "false")
+      shape_node.push(thisnode)
+
+      thisnode = REXML::Element.new("y:BorderStyle")
+      thisnode.add_attribute("color", "#000000")
+      thisnode.add_attribute("type", "line")
+      thisnode.add_attribute("width", "1.0")
+      shape_node.push(thisnode)
+
+      thisnode = REXML::Element.new("y:NodeLabel")
+      thisnode.add_attribute("alignment", "center")
+      thisnode.add_attribute("autoSizePolicy", "content")
+      thisnode.add_attribute("fontFamily", "Dialog")
+      thisnode.add_attribute("fontSize", "12")
+      thisnode.add_attribute("fontStyle", "plain")
+      thisnode.add_attribute("hasBackgroundColor", "false")
+      thisnode.add_attribute("hasLineColor", "false")
+      thisnode.add_attribute("height", "17.96875")
+      thisnode.add_attribute("horizontalTextPosition", "center")
+      thisnode.add_attribute("iconTextGap", "4")
+      thisnode.add_attribute("modelName", "internal")
+      thisnode.add_attribute("modelPosition", "c")
+      thisnode.add_attribute("textColor", "#000000")
+      thisnode.add_attribute("verticalTextPosition", "bottom")
+      thisnode.add_attribute("visible", "true")
+      thisnode.add_attribute("width", "47.37109375")
+      thisnode.add_attribute("x", "8.814453125")
+      thisnode.add_attribute("xml:space", "preserve")
+      thisnode.add_attribute("y", "6.015625")
+      value_text = REXML::Text.new(self.getName)
+      thisnode.push(value_text)
+      shape_node.push(thisnode)
+
+      thisnode = REXML::Element.new("y:Shape")
+      thisnode.add_attribute("type", "roundrectangle")
+      shape_node.push(thisnode)
+
+      content_node.push(shape_node)
+
     end
 
   end
@@ -1027,33 +1124,6 @@ module PORISNodeGraphMLPatch
       4
     end
 
-    # Dump GraphML from this item.  Appends default mode
-    # to super's GraphML
-    # TODO: At the moment we have not selected default modes
-    def toGraphML(dom)
-
-      # <default-mode-id type="integer" nil="true"/>
-      n_node = super(dom)
-      defaultmodenode = REXML::Element.new("default-mode-id")
-      defaultmodenode.add_attribute("type", "integer")
-      # WARNING: It looks like the java panel is not correctly using default mode
-
-      m = getDefaultMode
-      if m.nil?
-        defaultmodenode.add_attribute("nil", "true")
-      else
-        defaultmodetext = REXML::Text.new(m.getId.to_s)
-        if defaultmodetext
-          defaultmodenode.push(defaultmodetext)
-        else
-          puts "Error creating a text node for the default value of the #{getName} mode"
-          raise "Assertion failed"
-        end
-      end
-      n_node.push(defaultmodenode)
-      n_node
-    end
-
   end
 end
 PORISNode.send(:include, PORISNodeGraphMLPatch)
@@ -1104,15 +1174,6 @@ module PORISParamGraphMLPatch
       "sub-system"
     end
 
-    def toGraphML(doc)
-      n_node = super(doc)
-      childnode = REXML::Element.new("default-value-id")
-      childnode.add_attribute("type", "integer")
-      childnode.add_attribute("nil", "true")
-      n_node.push(childnode)
-      n_node
-    end
-
   end
 end
 PORISParam.send(:include, PORISParamGraphMLPatch)
@@ -1158,6 +1219,213 @@ module PORISSysGraphMLPatch
 
   module InstanceMethods
 
+=begin
+    <y:ProxyAutoBoundsNode>
+
+
+    <y:Realizers active="0">
+      <y:GroupNode>
+        <y:Geometry height="1319.2480096767354" width="1764.9852044160361" x="-504.1733350215851" y="530.11166971383"/>
+        <y:Fill color="#FFFFFF" transparent="false"/>
+        <y:BorderStyle color="#000000" type="dashed" width="1.0"/>
+        <y:NodeLabel alignment="right" autoSizePolicy="node_width" backgroundColor="#EBEBEB" borderDistance="0.0" fontFamily="Dialog" fontSize="15" fontStyle="plain" hasLineColor="false" height="21.4609375" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="t" textColor="#000000" verticalTextPosition="bottom" visible="true" width="1764.9852044160361" x="0.0" xml:space="preserve" y="0.0">ARCGenIII</y:NodeLabel>
+        <y:Shape type="roundrectangle"/>
+        <y:State closed="false" closedHeight="1557.3791055961901" closedWidth="1419.1561391088312" groupDepthFillColorEnabled="false" innerGraphDisplayEnabled="false"/>
+        <y:Insets bottom="15" bottomF="15.0" left="15" leftF="15.0" right="15" rightF="15.0" top="15" topF="15.0"/>
+        <y:BorderInsets bottom="0" bottomF="0.0" left="0" leftF="0.0" right="0" rightF="0.0" top="0" topF="0.0"/>
+      </y:GroupNode>
+      <y:GroupNode>
+        <y:Geometry height="1557.3791055961901" width="1419.1561391088312" x="-174.00127841182774" y="251.06542882408098"/>
+        <y:Fill hasColor="false" transparent="false"/>
+        <y:BorderStyle color="#000000" type="dashed" width="1.0"/>
+        <y:NodeLabel alignment="right" autoSizePolicy="node_width" backgroundColor="#EBEBEB" borderDistance="0.0" fontFamily="Dialog" fontSize="15" fontStyle="plain" hasLineColor="false" height="21.4609375" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="t" textColor="#000000" verticalTextPosition="bottom" visible="true" width="1419.1561391088312" x="0.0" xml:space="preserve" y="0.0">System</y:NodeLabel>
+        <y:Shape type="roundrectangle"/>
+        <y:State closed="true" closedHeight="1557.3791055961901" closedWidth="1419.1561391088312" innerGraphDisplayEnabled="false"/>
+        <y:Insets bottom="15" bottomF="15.0" left="15" leftF="15.0" right="15" rightF="15.0" top="15" topF="15.0"/>
+        <y:BorderInsets bottom="0" bottomF="0.0" left="0" leftF="0.0" right="0" rightF="0.0" top="0" topF="0.0"/>
+      </y:GroupNode>
+    </y:Realizers>
+
+
+    </y:ProxyAutoBoundsNode>
+
+=end
+    def addGraphMLShapeToNode(dom, content_node)
+
+
+      shape_node = REXML::Element.new("y:ProxyAutoBoundsNode")
+
+      this_realizers = REXML::Element.new("y:Realizers")
+      this_realizers.add_attribute("active", "0")
+
+      this_group = REXML::Element.new("y:GroupNode")
+
+      thisnode = REXML::Element.new("y:Geometry")
+      thisnode.add_attribute("height", "1319.0")
+      thisnode.add_attribute("width", "1764.0")
+      thisnode.add_attribute("x", "-504.0")
+      thisnode.add_attribute("y", "530.0")
+      this_group.push(thisnode)
+
+      thisnode = REXML::Element.new("y:Fill")
+      thisnode.add_attribute("color", "#FFFFFF")
+      thisnode.add_attribute("transparent", "false")
+      this_group.push(thisnode)
+
+      thisnode = REXML::Element.new("y:BorderStyle")
+      thisnode.add_attribute("color", "#000000")
+      thisnode.add_attribute("type", "dashed")
+      thisnode.add_attribute("width", "1.0")
+      this_group.push(thisnode)
+
+      thisnode = REXML::Element.new("y:NodeLabel")
+      thisnode.add_attribute("alignment", "right")
+      thisnode.add_attribute("autoSizePolicy", "node_width")
+      thisnode.add_attribute("backgroundColor", "#EBEBEB")
+      thisnode.add_attribute("borderDistance", "0.0")
+      thisnode.add_attribute("fontFamily", "Dialog")
+      thisnode.add_attribute("fontSize", "15")
+      thisnode.add_attribute("fontStyle", "plain")
+      thisnode.add_attribute("hasBackgroundColor", "false")
+      thisnode.add_attribute("hasLineColor", "false")
+      thisnode.add_attribute("height", "21.96875")
+      thisnode.add_attribute("horizontalTextPosition", "center")
+      thisnode.add_attribute("iconTextGap", "4")
+      thisnode.add_attribute("modelName", "internal")
+      thisnode.add_attribute("modelPosition", "t")
+      thisnode.add_attribute("textColor", "#000000")
+      thisnode.add_attribute("verticalTextPosition", "bottom")
+      thisnode.add_attribute("visible", "true")
+      thisnode.add_attribute("width", "1764.37109375")
+      thisnode.add_attribute("x", "0.0")
+      thisnode.add_attribute("xml:space", "preserve")
+      thisnode.add_attribute("y", "0.0")
+      value_text = REXML::Text.new(self.getName)
+      thisnode.push(value_text)
+      this_group.push(thisnode)
+
+      thisnode = REXML::Element.new("y:Shape")
+      thisnode.add_attribute("type", "roundrectangle")
+      this_group.push(thisnode)
+
+      thisnode = REXML::Element.new("y:State")
+      thisnode.add_attribute("closed", "false")
+      thisnode.add_attribute("closedHeight", "1557.3791055961901")
+      thisnode.add_attribute("closedWidth", "1419.3791055961901")
+      thisnode.add_attribute("groupDepthFillColorEnabled", "false")
+      thisnode.add_attribute("innerGraphDisplayEnabled", "false")
+      this_group.push(thisnode)
+
+      thisnode = REXML::Element.new("y:Insets")
+      thisnode.add_attribute("bottom", "15")
+      thisnode.add_attribute("bottomF", "15.0")
+      thisnode.add_attribute("left", "15")
+      thisnode.add_attribute("leftF", "15.0")
+      thisnode.add_attribute("right", "15")
+      thisnode.add_attribute("rightF", "15.0")
+      thisnode.add_attribute("top", "15")
+      thisnode.add_attribute("topF", "15.0")
+      this_group.push(thisnode)
+
+      thisnode = REXML::Element.new("y:BorderInsets")
+      thisnode.add_attribute("bottom", "0")
+      thisnode.add_attribute("bottomF", "0.0")
+      thisnode.add_attribute("left", "0")
+      thisnode.add_attribute("leftF", "0.0")
+      thisnode.add_attribute("right", "0")
+      thisnode.add_attribute("rightF", "0.0")
+      thisnode.add_attribute("top", "0")
+      thisnode.add_attribute("topF", "0.0")
+      this_group.push(thisnode)
+
+
+      this_realizers.push(this_group)
+
+      this_group = REXML::Element.new("y:GroupNode")
+
+       thisnode = REXML::Element.new("y:Geometry")
+      thisnode.add_attribute("height", "1557.0")
+      thisnode.add_attribute("width", "1419.0")
+      thisnode.add_attribute("x", "-174.0")
+      thisnode.add_attribute("y", "251.0")
+      this_group.push(thisnode)
+
+      thisnode = REXML::Element.new("y:Fill")
+      thisnode.add_attribute("hasColor", "false")
+      thisnode.add_attribute("transparent", "false")
+      this_group.push(thisnode)
+
+      thisnode = REXML::Element.new("y:BorderStyle")
+      thisnode.add_attribute("color", "#000000")
+      thisnode.add_attribute("type", "dashed")
+      thisnode.add_attribute("width", "1.0")
+      this_group.push(thisnode)
+
+      thisnode = REXML::Element.new("y:NodeLabel")
+      thisnode.add_attribute("alignment", "right")
+      thisnode.add_attribute("autoSizePolicy", "node_width")
+      thisnode.add_attribute("backgroundColor", "#EBEBEB")
+      thisnode.add_attribute("borderDistance", "0.0")
+      thisnode.add_attribute("fontFamily", "Dialog")
+      thisnode.add_attribute("fontSize", "15")
+      thisnode.add_attribute("fontStyle", "plain")
+      thisnode.add_attribute("hasLineColor", "false")
+      thisnode.add_attribute("height", "21.96875")
+      thisnode.add_attribute("horizontalTextPosition", "center")
+      thisnode.add_attribute("iconTextGap", "4")
+      thisnode.add_attribute("modelName", "internal")
+      thisnode.add_attribute("modelPosition", "t")
+      thisnode.add_attribute("textColor", "#000000")
+      thisnode.add_attribute("verticalTextPosition", "bottom")
+      thisnode.add_attribute("visible", "true")
+      thisnode.add_attribute("width", "1419.37109375")
+      thisnode.add_attribute("x", "0.0")
+      thisnode.add_attribute("xml:space", "preserve")
+      thisnode.add_attribute("y", "0.0")
+      value_text = REXML::Text.new(self.getName)
+      thisnode.push(value_text)
+      this_group.push(thisnode)
+
+      thisnode = REXML::Element.new("y:Shape")
+      thisnode.add_attribute("type", "roundrectangle")
+      this_group.push(thisnode)
+
+      thisnode = REXML::Element.new("y:State")
+      thisnode.add_attribute("closed", "true")
+      thisnode.add_attribute("closedHeight", "1557.3791055961901")
+      thisnode.add_attribute("closedWidth", "1419.3791055961901")
+      thisnode.add_attribute("innerGraphDisplayEnabled", "false")
+      this_group.push(thisnode)
+
+      thisnode = REXML::Element.new("y:Insets")
+      thisnode.add_attribute("bottom", "15")
+      thisnode.add_attribute("bottomF", "15.0")
+      thisnode.add_attribute("left", "15")
+      thisnode.add_attribute("leftF", "15.0")
+      thisnode.add_attribute("right", "15")
+      thisnode.add_attribute("rightF", "15.0")
+      thisnode.add_attribute("top", "15")
+      thisnode.add_attribute("topF", "15.0")
+      this_group.push(thisnode)
+
+      thisnode = REXML::Element.new("y:BorderInsets")
+      thisnode.add_attribute("bottom", "0")
+      thisnode.add_attribute("bottomF", "0.0")
+      thisnode.add_attribute("left", "0")
+      thisnode.add_attribute("leftF", "0.0")
+      thisnode.add_attribute("right", "0")
+      thisnode.add_attribute("rightF", "0.0")
+      thisnode.add_attribute("top", "0")
+      thisnode.add_attribute("topF", "0.0")
+      this_group.push(thisnode)
+
+
+      this_realizers.push(this_group)
+      shape_node.push(this_realizers)
+      content_node.push(shape_node)
+
+
+    end
 
     def getGraphMLType
       "PORISNode"

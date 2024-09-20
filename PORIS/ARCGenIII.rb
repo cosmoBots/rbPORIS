@@ -649,18 +649,18 @@ thismodel = ARCGenIIIPORIS.new(8)
 
 root = thismodel.getRoot
 engmode = root.getModeFromName("UNRESTRICTED")
-puts(engmode.getName)
-puts(engmode.class.name)
-puts(engmode.getSubModes.length.to_s)
+# puts(engmode.getName)
+# puts(engmode.class.name)
+# puts(engmode.getSubModes.length.to_s)
 
 acsys = root.getDescendantSysFromName('Acquisition')
 calibmode = acsys.getModeFromName('Calibration')
-puts(calibmode.getId.to_s + " " + calibmode.getName)
-acsys.getModes.each{|k, m| puts(m.getId.to_s+" "+m.getName)}
-puts("----")
-calibmode.getSubModes.each{|k, m| puts(m.getId.to_s+" "+m.getName)}
-xmlmodel = thismodel.toXML
-puts(xmlmodel.to_s)
+# puts(calibmode.getId.to_s + " " + calibmode.getName)
+# acsys.getModes.each{|k, m| puts(m.getId.to_s+" "+m.getName)}
+# puts("----")
+# calibmode.getSubModes.each{|k, m| puts(m.getId.to_s+" "+m.getName)}
+# xmlmodel = thismodel.toXML
+# puts(xmlmodel.to_s)
 
 graphMLmodel = thismodel.toGraphML
 puts(graphMLmodel.to_s)

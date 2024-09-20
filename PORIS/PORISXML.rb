@@ -283,7 +283,12 @@ module PORISXMLPatch
       # subnode with the project id
       nodetype_child = REXML::Element.new("project-id")
       nodetype_child.add_attribute("type", "integer")
-      value_text = REXML::Text.new(getProjectId.to_s)
+      if self.getDocument != nil then
+        prjident = self.getDocument.getProjectId.to_s
+      else
+        prjident = "0"
+      end
+      value_text = REXML::Text.new(prjident)
       nodetype_child.push(value_text)
       n_node.push(nodetype_child)
 

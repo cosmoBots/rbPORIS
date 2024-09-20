@@ -145,7 +145,31 @@ class PORIS
     @parent = nil         # Parent node (if any)
     @labels = {}           # A dictionary of labels for this item, the scope_kind acts as a key
     @node_attributes = {}  # A dictionary of node attributes for this item, the content acts as a key
-    @project_id = 0 # The project where the item is described
+
+    # TODO: Move this to a patch
+    @rm_id = nil
+  end
+
+  # TODO: Move this to a patch
+  # rm_id getter
+  def getRmId
+    if @rm_id == nil then
+      return @id
+    else
+      return @rm_id
+    end
+  end
+
+  # TODO: Move this to a patch
+  # id setter
+  def setRmId(rmid)
+    @rm_id = rmid
+  end
+
+  # TODO: Move this to a patch
+  # id setter
+  def setRmProjectIdent(rmprjid)
+    @rm_project_ident = rmprjid
   end
 
   # Name getter
@@ -207,16 +231,6 @@ class PORIS
   # Parent setter
   def getParent
     @parent
-  end
-
-  # Project ID getter
-  def getProjectId
-    @project_id
-  end
-
-  # Project ID setter
-  def setProjectId(i)
-    @project_id = i
   end
 
   # Labels list getter
@@ -509,9 +523,8 @@ class PORISMode < PORIS
           # Search the first submode with the same parent than the candidate
           # Iterating all submodes
           self.getSubModes.each_value do |s|
-            if false
-              puts "#{s.getParent} #{s.getParent.getName}"
-            end
+            # puts "#{s.getParent} #{s.getParent.getName}"
+
 
             # Selecting the current submode only if it shares parent with candidate mode (m)
             if s.getParent == m.getParent
@@ -628,7 +641,7 @@ class PORISNode < PORIS
       end
     end
     @modes[m.getId] = m
-    puts("Setting "+m.getName+" as children of "+self.getName)
+    # puts("Setting "+m.getName+" as children of "+self.getName)
     m.setParent(self)
     if @defaultMode.nil?
       # No mode was the default one, this one will be the default one
@@ -721,42 +734,34 @@ class PORISNode < PORIS
   # This function is normally only called internally, in reaction to
   # the circumstances of not having a selected mode when it is expected to have
   def init
-    if false
-      puts "----> Init #{getName}, mode list len: #{@modes.length}"
-    end
+
+    # puts "----> Init #{getName}, mode list len: #{@modes.length}"
 
     # We select the first mode of the list, and set it as the selected one
     @selectedMode = self.unknownMode
-    if false
-      puts "Init #{getName}: #{@selectedMode.getName}"
-    end
+    # puts "Init #{getName}: #{@selectedMode.getName}"
     @selectedMode
   end
 
   # This function gets the selected mode of a PORISNode.  In case there is no selected mode
   # it forces the selection of the first one (UNKNOWN)
   def getNotNullSelectedMode
-    if false
-      puts "Entering in PORISNode getNotNullSelectedMode #{getName}"
-    end
+    # puts "Entering in PORISNode getNotNullSelectedMode #{getName}"
 
     ret = getSelectedMode
     if ret.nil?
       # There is no selected mode?  Then we will force the item initialization
       # This normally is not occurring, because from the first mode added, the item
       # has a selected one
-      if false
-        puts "- selectedMode is NULL"
-      end
+      # puts "- selectedMode is NULL"
 
       # If there is no selected mode, we will initialize the item, which will select
       # the first mode as the active one (the first mode should be the UNKNOWN one)
       ret = init
     end
 
-    if false
-      puts "- selectedMode is now #{getSelectedMode.getName}"
-    end
+    # puts "- selectedMode is now #{getSelectedMode.getName}"
+
     # This looks like redundant, but it is not!!!
     selectMode(getSelectedMode)
   end
@@ -777,37 +782,28 @@ class PORISNode < PORIS
   # allows disabling parts of a PORIS subtree depending on the choices made at higher levels
   # TODO: Implement a check to confirm m and current are siblings
   def getEligibleMode(m)
-    if false
-      puts "Entering in PORISNode #{getName}.getEligibleMode(#{m.getName})"
-    end
+
+    # puts "Entering in PORISNode #{getName}.getEligibleMode(#{m.getName})"
 
     ret = nil
     if @modes.key?(m.getId)
       # m is a mode of the current item
       if getParent.nil?
         # Current item has no parent, no restrictions to set m
-        if false
-          puts "Parent of #{getName} is null, no upper levels for restrictions, we can freely select m"
-        end
+        # puts "Parent of #{getName} is null, no upper levels for restrictions, we can freely select m"
         ret = m
       else
         # As this mode has a parent, we need to select a mode which is eligible in the context of the active mode at higher level
         # presenting the candidate as the candidate one, and the current mode as the alternative candidate
-        if false
-          puts "Searching within the #{getParent.getSelectedMode.submodes.length} submodes of #{getParent.getName}"
-          puts "selectedMode #{getSelectedMode.getName} #{m.getName}"
-        end
+        # puts "Searching within the #{getParent.getSelectedMode.submodes.length} submodes of #{getParent.getName}"
+        # puts "selectedMode #{getSelectedMode.getName} #{m.getName}"
         ret = getParent.getSelectedMode.getEligibleSubMode(m, getSelectedMode)
       end
 
       if ret.nil?
-        if false
-          puts "ERROR, we were not lucky, there was no way of selecting a mode (NULL after search)"
-        end
+        # puts "ERROR, we were not lucky, there was no way of selecting a mode (NULL after search)"
       else
-        if false
-          puts "Selected mode is #{ret.getName}"
-        end
+        # puts "Selected mode is #{ret.getName}"
       end
     else
       puts "ERROR, trying to select #{m.getName} which is not a mode of #{getName}"
@@ -885,6 +881,7 @@ class PORISParam < PORISNode
     @unknownValue = PORISValue.new("UNKNOWN")
     @unknownValue.virtual = true
     self.addValue(self.unknownValue)
+    @unknownValue.setDocument(self.getDocument)
     @unknownMode.addValue(self.unknownValue)
   end
 
@@ -951,14 +948,13 @@ class PORISParam < PORISNode
   end
 
   def getEligibleValue(v, current)
-    if false
-      if v.nil?
-        puts "Entering PORISParam getEligibleValue #{name} with NULL value"
-      else
-        puts "Entering PORISParam getEligibleValue #{name} with value #{v.name}"
-      end
-      puts "*** #{name} #{getSelectedMode&.name} #{modes}"
-    end
+
+    # if v.nil?
+    #   puts "Entering PORISParam getEligibleValue #{name} with NULL value"
+    # else
+    #   puts "Entering PORISParam getEligibleValue #{name} with value #{v.name}"
+    # end
+    # puts "*** #{name} #{getSelectedMode&.name} #{modes}"
 
     if getSelectedMode.nil?
       # puts "- selected_mode is NULL" if false
@@ -969,13 +965,11 @@ class PORISParam < PORISNode
   end
 
   def setValue(v)
-    if false
-      if v.nil?
-        puts "Entering PORISParam setValue #{name} with NULL value"
-      else
-        puts "Entering PORISParam setValue #{name} with value #{v.name}"
-      end
-    end
+    # if v.nil?
+    #   puts "Entering PORISParam setValue #{name} with NULL value"
+    # else
+    #   puts "Entering PORISParam setValue #{name} with value #{v.name}"
+    # end
 
     ret = getEligibleValue(v, @selected_value)
     if ret != @selected_value then
@@ -1049,9 +1043,7 @@ class PORISSys < PORISNode
   end
 
   def selectMode(m)
-    if false
-      puts "Entering in Sys selectMode for #{getName} with candidate mode #{m.getName}"
-    end
+    # puts "Entering in Sys selectMode for #{getName} with candidate mode #{m.getName}"
 
     prev_mode = getSelectedMode
     ret = super(m)
@@ -1066,16 +1058,14 @@ class PORISSys < PORISNode
       end
     end
 
-    if false
-      if m == ret
-        puts "Candidate mode successfully applied: #{ret.getName}"
-      else
-        if ret != prev_mode
-          puts "Alternative eligible mode applied: #{ret.getName}"
-        end
-      end
-      puts "Exiting PORISSys selectMode for #{getName} with candidate m=#{m.getName} and result =#{ret.getName}"
-    end
+    # if m == ret
+    #   puts "Candidate mode successfully applied: #{ret.getName}"
+    # else
+    #   if ret != prev_mode
+    #     puts "Alternative eligible mode applied: #{ret.getName}"
+    #   end
+    # end
+    # puts "Exiting PORISSys selectMode for #{getName} with candidate m=#{m.getName} and result =#{ret.getName}"
 
     ret
   end
@@ -1163,6 +1153,24 @@ class PORISDoc
     @item_dict = {}
     @root = nil
     @project_id = project_id
+    # TODO: Move this to a patch
+    @rm_id = nil
+  end
+
+  # TODO: Move this to a patch
+  # rm_id getter
+  def getRmId
+    if @rm_id == nil then
+      return "prj_" + @project_id.to_s
+    else
+      return @rm_id
+    end
+  end
+
+  # TODO: Move this to a patch
+  # id setter
+  def setRmId(rmid)
+    @rm_id = rmid
   end
 
   def setProjectId(i)
@@ -1195,6 +1203,7 @@ class PORISDoc
     n.setDocument(self)
     items_created.each{ |i|
       @item_dict[i.getId.to_s] = i
+      i.setDocument(self)
     }
 
   end
