@@ -1243,30 +1243,6 @@ module PORISDocXMLPatch
       ret
     end
 
-    def toRuby
-      rootNodeCode = self.root.toRuby
-
-      finalcode = "require_relative 'PORIS'\n\n"
-
-      finalcode += "class #{self.root.getRubyName}PORIS < PORISDoc\n"
-      # We remove the accessors to avoid nomenclature issues
-      # finalcode += rootNodeCode['attributes']
-      finalcode += "\tdef initialize(project_id)\n"
-      finalcode += "\t\tsuper(project_id)\n"
-      finalcode += rootNodeCode["constructor"]
-      finalcode += "\t\tself.setRoot(#{self.root.getRubyIdent})\n"
-      finalcode += rootNodeCode["destinations"]
-      finalcode += rootNodeCode["foreigndests"]
-      finalcode += "\tend\n"
-      # We remove the functions to avoid nomenclature issues
-      # finalcode += rootNodeCode['functions']
-      finalcode += "end\n\n"
-
-      finalcode += "thismodel = #{self.root.getRubyName}PORIS.new(#{self.getProjectId})\n"
-
-      return finalcode
-    end
-
   end
 end
 PORISDoc.send(:include, PORISDocXMLPatch)
