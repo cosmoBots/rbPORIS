@@ -1,4 +1,4 @@
-require_relative 'PORIS'
+require_relative 'PORISXML'
 
 class ARCGenIIIPORIS < PORISDoc
 	def initialize(project_id)
@@ -640,3 +640,5 @@ puts("----")
 calibmode.getSubModes.each{|k, m| puts(m.getId.to_s+" "+m.getName)}
 xmlmodel = thismodel.toXML
 # puts(xmlmodel.to_s)
+
+puts(thismodel.toRuby)
