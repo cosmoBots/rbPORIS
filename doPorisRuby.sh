@@ -41,6 +41,7 @@ fi
 
 # Defining some environmental variables
 # TODO: Convert them to arguments
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 DEVBASE_PATH=`pwd`
 
 ########### INTERNAL VARIABLES CALCULATION AREA ##############
@@ -62,8 +63,8 @@ OUTPUT_PATH=${DEVBASE_PATH}'/output/'${OUTPUT_BASE}
 # Normally set to PORIS_TOOLS_PYTHON_PATH=${DEVBASE_PYTHON_PATH}/PORIS, but if you
 # change DEVBASE_RELATIVE_PATH you might want to separate the link
 # between the two variables
-PORIS_TOOLS_PATH=${DEVBASE_PATH}
-PORIS_TOOLS_PYTHON_PATH=${DEVBASE_PATH}
+PORIS_TOOLS_PATH=${SCRIPT_DIR}
+PORIS_TOOLS_PYTHON_PATH=${SCRIPT_DIR}
 echo "path"
 echo ${PORIS_TOOLS_PATH}
 echo ${PORIS_TOOLS_PYTHON_PATH}
@@ -84,7 +85,7 @@ rm -rf ${OUTPUT_PATH}/${DEVNAME}
 # Let's create the product directories
 echo "Creating "${OUTPUT_PATH}/${DEVNAME}
 mkdir -p ${OUTPUT_PATH}/${DEVNAME}
-ln -s ../../../PORIS/PORIS.rb ${OUTPUT_PATH}/${DEVNAME}/PORIS.rb
+ln -s ../../rbPORIS/PORIS/PORIS.rb ${OUTPUT_PATH}/${DEVNAME}/PORIS.rb
 
 ######### If no USER CUSTOM CODE FOLDER ADDED, COPY THE TEMPLATE ONE #############
 echo "Checking the existence of ${DEVBASE_PYTHON_PHYS_PATH}"
@@ -103,7 +104,7 @@ else
   sed -i "s/DEVICENAME/$DEVNAME/" ${OUTPUT_PHYS_PATH}/${DEVNAME}_physical.rb
   sed -i "s/DEVICENAME/$DEVNAME/" ${OUTPUT_PHYS_PATH}/${DEVNAME}_physical.rb
   ln -s ../${DEVNAME}/${DEVNAME}PORIS.rb ${OUTPUT_PHYS_PATH}/${DEVNAME}PORIS.rb
-  ln -s ../../../PORIS/PORIS.rb ${OUTPUT_PHYS_PATH}/PORIS.rb
+  ln -s ../../rbPORIS/PORIS/PORIS.rb ${OUTPUT_PHYS_PATH}/PORIS.rb
 fi
 
 ######### PARSING THE MODEL AND GENERATING THE PORIS PRODUCTS ###############
