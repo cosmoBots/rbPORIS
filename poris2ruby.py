@@ -169,6 +169,9 @@ def loadODS():
                     thisparent['children'].append(thiskey)
 
     nodes_to_add = {}
+    '''
+    ##### Removing Engineering
+    
     if not savemem:
         # Create engineering modes
         for thiskey in nodes_dict.keys():
@@ -214,6 +217,7 @@ def loadODS():
                     if len(virtnode['blocking']) > 0:
                         nodes_to_add[virtident] = virtnode
                         thisnode['children'].append(virtident)
+    '''
 
     tree_dict = {}
     while len(tree_dict) < len(nodes_dict):
@@ -301,6 +305,8 @@ def createPythonCode(nodes_dict,deviceName,output_path: str,relative_path: str):
             if thisclass == "prParam":
                 # PORISParam prBinning;
                 porishstr += "        @pr"+nodename+" = PORISParam.new(\""+nodename+"\")\n"
+                '''
+                ##### Removing UNKNOWN
                 if not savemem:
                     porishstr += "        @md"+nodename+"Mode_UNKNOWN = PORISMode.new(\""+nodename+"Mode_UNKNOWN\")\n"
                     porishstr += "        @vl"+nodename+"_UNKNOWN = PORISValue.new(\""+nodename+"_UNKNOWN\")\n"
@@ -308,7 +314,7 @@ def createPythonCode(nodes_dict,deviceName,output_path: str,relative_path: str):
                 else:
                     porishstr += "        @md"+nodename+"UNKNOWN = PORISMode.new(\"UNKNOWN\")\n"
                     porishstr += "        @vl"+nodename+"_UNKNOWN = PORISValue.new(\"UNKNOWN\")\n"
-
+                '''
 
                 methodsstr += "\n    ## "+thisclass+" "+nodename+" \n"
                 methodsstr += "\n    # "+nodename+"\n"
@@ -373,6 +379,9 @@ def createPythonCode(nodes_dict,deviceName,output_path: str,relative_path: str):
                 if parentNode is not None:
                     poriscinitstr += "        @sys"+parentNodeName+".addParam(@pr"+nodename+")\n"
 
+                '''
+                ##### Removing UNKNOWN
+
                 if not savemem:
                     poriscinitstr += "        self.addItem(@vl"+nodename+"_UNKNOWN)\n"
                     
@@ -401,6 +410,7 @@ def createPythonCode(nodes_dict,deviceName,output_path: str,relative_path: str):
                     poriscinitstr += "        @pr"+nodename+".addMode(@md"+nodename+ "UNKNOWN)\n"
                     poriscinitstr += "        @md"+nodename+ "UNKNOWN.addValue(@vl"+nodename+ "_UNKNOWN)\n"
                     poriscinitstr += "        @md"+parentNodeName+ "UNKNOWN.addSubMode(@md"+nodename+ "UNKNOWN)\n"
+                '''
 
                 methodsstr += "\n    ## "+nodename+"Mode \n"
                 methodsstr += "    def get_"+nodename+"Mode\n"
@@ -413,11 +423,15 @@ def createPythonCode(nodes_dict,deviceName,output_path: str,relative_path: str):
             else:
                 # PORISSys prDetector;
                 porishstr += "        @sys"+nodename+" = PORISSys.new(\""+nodename+"\")\n"
+                '''
+                ##### Removing UNKNOWN
+
                 if not savemem:
                     porishstr += "        @md"+nodename+"Mode_UNKNOWN = PORISMode.new(\""+nodename+"Mode_UNKNOWN\")\n"
 
                 else:
                     porishstr += "        @md"+nodename+"UNKNOWN = PORISMode.new(\"UNKNOWN\")\n"
+                '''
 
                 parentNode = None
                 parentNodeName = ""
@@ -451,12 +465,14 @@ def createPythonCode(nodes_dict,deviceName,output_path: str,relative_path: str):
                 if parentNode is not None:
                     poriscinitstr += "        @sys"+parentNodeName+".addSubsystem(@sys"+nodename+")\n" 
 
+                '''
+                ##### Removing UNKNOWN
+
                 if not savemem:
                     poriscinitstr += "        self.addItem(@md"+nodename+"Mode_UNKNOWN)\n"
 
                 else:
                     poriscinitstr += "        self.addItem(@md"+nodename+"UNKNOWN)\n"
-                    
 
                 if not savemem:
                     poriscinitstr += "        @md"+nodename+ "Mode_UNKNOWN.setIdent(\"UNKM_"+thisnode['ident']+ "\")\n"
@@ -466,6 +482,8 @@ def createPythonCode(nodes_dict,deviceName,output_path: str,relative_path: str):
                 else:
                     poriscinitstr += "        @sys"+nodename+".addMode(@md"+nodename+ "UNKNOWN)\n"
 
+                '''
+                
                 methodsstr += "\n    ## "+nodename+"Mode \n"
                 methodsstr += "    def get_"+nodename+"Mode\n"
                 #@sysARCGenIII.getSelectedMode
@@ -475,6 +493,12 @@ def createPythonCode(nodes_dict,deviceName,output_path: str,relative_path: str):
                 methodsstr += "        @sys"+nodename+".selectMode(mode)\n\tend\n"                
             
 
+
+            modeliststr = ""
+            modeshortliststr = ""
+
+            '''
+            ##### Removing UNKNOWN
 
             if thisclass == "prParam":
                 valuesstr = nodename+"_UNKNOWN"
@@ -488,6 +512,8 @@ def createPythonCode(nodes_dict,deviceName,output_path: str,relative_path: str):
                 modeliststr = nodename+"UNKNOWN"
                 
             modeshortliststr = "UNKNOWN"
+            '''
+            
             switchfm2 = False
             if 'parentnode' in thisnode.keys():
                 parentnode = thisnode['parentnode']
