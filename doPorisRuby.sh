@@ -54,7 +54,7 @@ OUTPUT_BASE=${DEVPATH%"$DEVNAME"}
 echo ${DEVPATH}
 echo ${DEVNAME}
 echo ${OUTPUT_BASE}
-OUTPUT_PATH=${DEVBASE_PATH}'/output/'${OUTPUT_BASE}
+OUTPUT_PATH=${DEVBASE_PATH}'/output/rb/'${OUTPUT_BASE}
 
 # The path for the C++ base folder for the devices
 

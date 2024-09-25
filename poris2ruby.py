@@ -497,21 +497,28 @@ def createPythonCode(nodes_dict,deviceName,output_path: str,relative_path: str):
             modeliststr = ""
             modeshortliststr = ""
 
-            '''
-            ##### Removing UNKNOWN
+
 
             if thisclass == "prParam":
-                valuesstr = nodename+"_UNKNOWN"
-                valuesshortstr = "UNKNOWN"
+                valuesstr = ""
+                valuesshortstr = ""
                 valuemaxstr = valuesstr
+                '''
+                ##### Removing UNKNOWN
+                valuesstr += nodename+"_UNKNOWN"
+                valuesshortstr += "UNKNOWN"
+                valuemaxstr += valuesstr
+                '''
             
+            '''
+            ##### Removing UNKNOWN
             if not savemem:
-                modeliststr = nodename+"Mode_UNKNOWN"
+                modeliststr += nodename+"Mode_UNKNOWN"
             
             else:
-                modeliststr = nodename+"UNKNOWN"
+                modeliststr += nodename+"UNKNOWN"
                 
-            modeshortliststr = "UNKNOWN"
+            modeshortliststr += "UNKNOWN"
             '''
             
             switchfm2 = False
