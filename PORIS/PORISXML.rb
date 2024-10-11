@@ -979,11 +979,15 @@ module PORISNodeXMLPatch
           if d.getAttribute("type") == "PORISNode" || d.getAttribute("type") == "PORISSys" || d.getAttribute("type") == "PORISParam"
             # puts "Is a system"
             return PORISSys.fromXML(n_node, pdoc)
+          else
+            if d.getAttribute("type") == "PORISValue" then
+              return PORISParam.fromXML(n_node, pdoc)
+            end
           end
         end
       end
-      # puts "Is a param"
-      PORISParam.fromXML(n_node, pdoc)
+      # puts "Is a sys"
+      return PORISSys.fromXML(n_node, pdoc)
     end
 
     def fromXML(n_node, pdoc)
